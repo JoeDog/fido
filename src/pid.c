@@ -47,13 +47,17 @@ BOOLEAN
 set_pid(PID this, int pid)
 {
   char buf[16];
+  int  ret = 0;
   if (pid > 0) {
     this->pid = pid;
     if ((this->fd = open(this->file, O_WRONLY| O_APPEND, 0644 )) < 0) {
       return FALSE;
     } else {
       snprintf(buf, sizeof(buf), "%d\n", pid);
-      write(this->fd, buf, strlen(buf)); 
+      ret = write(this->fd, buf, strlen(buf)); 
+      if (ret < 0) {
+        fprintf(stderr, "ERROR: unable to write PID file: %s", this->file);
+      }
       close(this->fd);
       return TRUE;
     } 
