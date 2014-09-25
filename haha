@@ -1,8 +1,0 @@
-rm -Rf ./doc/CVS
-rm -Rf ./include/CVS
-rm -Rf ./include/joedog/CVS
-rm -Rf ./lib/CVS
-rm -Rf ./lib/joedog/CVS
-rm -Rf ./src/CVS
-rm -Rf ./utils/CVS
-
