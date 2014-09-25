@@ -243,6 +243,8 @@ char *realloc ();
 #  define TOLOWER(c) tolower(c)
 # endif
 
+#define UNUSED(expr) do { (void)(expr); } while (0)
+
 # ifndef NULL
 #  define NULL (void *)0
 # endif
@@ -7142,10 +7144,11 @@ byte_re_match_2_internal (struct re_pattern_buffer *bufp,
             UCHAR_T *pdummy = NULL;
             const CHAR_T *sdummy = NULL;
 
+            UNUSED(sdummy);
+            UNUSED(pdummy);
+
             DEBUG_PRINT1 ("EXECUTING pop_failure_jump.\n");
-            POP_FAILURE_POINT (sdummy, pdummy,
-                               dummy_low_reg, dummy_high_reg,
-                               reg_dummy, reg_dummy, reg_info_dummy);
+            POP_FAILURE_POINT (sdummy, pdummy, dummy_low_reg, dummy_high_reg, reg_dummy, reg_dummy, reg_info_dummy);
           }
 	  /* Note fall through.  */
 
