@@ -25,6 +25,7 @@
 #define MINLINES 10      
 #define READSIZE BUFSIZ 
 #define LINESIZE 128
+#define MAXPATH  4096
 
 struct FIDO_T
 {
@@ -32,6 +33,7 @@ struct FIDO_T
   char      *rfile;
   char      *action;
   char      *exclude;
+  BOOLEAN   recurse;
   long      cache;
   ARRAY     rules;
   LOG       logger;
@@ -53,6 +55,7 @@ typedef enum action_t {
 private BOOLEAN  __start_parser(FIDO this);
 private BOOLEAN  __start_watcher(FIDO this);
 private BOOLEAN  __start_agecheck(FIDO this);
+private BOOLEAN  __agecheck(FIDO this, char *dir);
 private BOOLEAN  __is_readable (FIDO this);
 private long     __ticks (FIDO this, long offset);
 private long     __get_offset (FIDO this);
@@ -79,6 +82,7 @@ new_fido(CONF C, const char *file)
   this->rfile    = xstrdup(conf_get_rules(this->C,  this->wfile));
   this->action   = xstrdup(conf_get_action(this->C, this->wfile));
   this->exclude  = xstrdup(conf_get_exclude(this->C, this->wfile));
+  this->recurse  = conf_get_recurse(this->C, this->wfile);
   this->throttle = new_throttle(this->wfile, __parse_time(conf_get_throttle(this->C, this->wfile)));
   this->logger   = new_logger(conf_get_log(this->C, this->wfile));
   this->rules    = new_array();
@@ -143,13 +147,90 @@ __start_watcher(FIDO this)
     }
     sleep(1);
   }  
+  return TRUE;
 }
 
-private BOOLEAN 
+private BOOLEAN
 __start_agecheck(FIDO this) 
 {
+  while (TRUE) {
+    __agecheck(this, this->wfile);
+    sleep(1);
+  }
+  return TRUE;
+}
+
+private BOOLEAN
+__agecheck(FIDO this, char *dir)
+{
+  DIR *D;
   int sec = __parse_time(this->rfile);
 
+  D = opendir(dir);
+  if (! D) {
+    fprintf (stderr, "Cannot open directory '%s'\n", dir);
+    exit (EXIT_FAILURE);
+  }
+  while (TRUE) {
+    char rule[1024];
+    if (! __is_directory(this->wfile)) {
+      /**
+       * We're watching a single file
+       */
+      if (__exceeds(this, this->wfile, sec) == TRUE) {
+        snprintf(rule, 256, "EXCEEDS: %s", this->wfile);
+        __run_command(this, new_rule(rule));
+      }
+    } else {
+      /**
+       * We're monitoring a directory
+       */
+      const char    *name;
+      struct dirent *entry;
+
+      entry = readdir (D);
+      if (! entry) {
+        break;
+      }
+      name = entry->d_name;
+      
+      if (! __ereg(this->exclude, entry->d_name) && strcmp(name, "..") != 0 && strcmp(name, ".") != 0 ) {
+        int len;
+        char path[MAXPATH];
+
+        len = snprintf(path, MAXPATH, "%s/%s", dir, name);
+        if (len >= MAXPATH) {
+          fprintf (stderr, "Path length has become too long.\n");
+          exit (1);
+        }
+        if (__exceeds(this, path, sec) == TRUE) {
+          if (is_daemon(this->C) == TRUE) {
+             logger(this->logger,   "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
+             VERBOSE(is_verbose(this->C), "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
+           } else {
+             VERBOSE(is_verbose(this->C), "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
+           }
+           snprintf(rule, 256, "EXCEEDS: %s", path);
+          __run_command(this, new_rule(rule));
+        }
+        if ((this->recurse) && (entry->d_type & DT_DIR)) {
+           __agecheck(this, path);
+        }
+      }
+    }
+  }
+  if (closedir(D)) {
+    fprintf (stderr, "Could not close '%s'\n", dir);
+    exit (EXIT_FAILURE);
+  }
+  return TRUE;
+}
+
+#if 0
+private BOOLEAN 
+__start_agecheck(FIDO this, char *path) 
+{
+  int sec = __parse_time(this->rfile);
   while (TRUE) {
     char rule[256];
     if (! __is_directory(this->wfile)) {
@@ -159,27 +240,52 @@ __start_agecheck(FIDO this)
       }
     } else {
       DIR *dir;
-      struct dirent *ent;
-      if ((dir = opendir (this->wfile)) != NULL) {
-        while ((ent = readdir (dir)) != NULL) {
-          if (! __ereg(this->exclude, ent->d_name)) {
+      struct dirent *entry;
+      if ((dir = opendir (path)) != NULL) {
+        while ((entry = readdir (dir)) != NULL) {
+          int  len = 0;
+          char tmp[MAXPATH];
+          if (! entry) {
+            break;
+          }
+          if (! __ereg(this->exclude, entry->d_name)) {
             /** 
              * XXX:  we need to test for an ending slash on
              * this->wfile in order to avoid a double-slash
              */
-            char tmp[2048];
-            snprintf(tmp, 2048, "%s/%s", this->wfile, ent->d_name);
+            len = snprintf(tmp, MAXPATH, "%s/%s", path, entry->d_name);
+            if (len >= MAXPATH) {
+              logger(this->logger, "FATAL: the path length has grown too long.");
+              exit(1);
+            }
             if (__exceeds(this, tmp, sec) == TRUE) {
               if (is_daemon(this->C) == TRUE) {
-                logger(this->logger,   "%s (%s) exceeds %d seconds", this->wfile, ent->d_name, sec);
-                VERBOSE(is_verbose(this->C), "%s (%s) exceeds %d seconds", this->wfile, ent->d_name, sec);
+                logger(this->logger,   "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
+                VERBOSE(is_verbose(this->C), "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
               } else {
-                VERBOSE(is_verbose(this->C), "%s (%s) exceeds %d seconds", this->wfile, ent->d_name, sec);
+                VERBOSE(is_verbose(this->C), "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
               }
-              snprintf(rule, 256, "EXCEEDS: %s", this->wfile);
+              snprintf(rule, 256, "EXCEEDS: %s", path);
               __run_command(this, new_rule(rule));
             }
-          }
+            printf("THIS->RECURSE (%s): %d => %d\n", entry->d_name, this->recurse, entry->d_type & DT_DIR);
+            if ((this->recurse) && (entry->d_type & DT_DIR)) {
+              printf("DIRECTORY: %s\n", entry->d_name);
+              if (strcmp (entry->d_name, "..") != 0 && strcmp(entry->d_name, ".") != 0) {
+                char npath[MAXPATH];
+
+                len = snprintf(npath, MAXPATH, "%s/%s", path, entry->d_name);
+                printf ("%s\n", npath);
+                if (len >= MAXPATH) {
+                  logger(this->logger, "FATAL: the path length has grown too long.");
+                  exit(1);
+                }
+                __start_agecheck(this, npath);
+              }
+            } else {
+              printf("WTF? Not in recurse: %s\n", path);
+            }
+          } 
         }
         closedir (dir);
       } else {
@@ -189,6 +295,7 @@ __start_agecheck(FIDO this)
     sleep(1);
   }
 }
+#endif
 
 
 private BOOLEAN
@@ -283,7 +390,6 @@ private long
 __ticks (FIDO this, long offset)
 {
   FILE *fp;
-  int   ret;
   char *line;
   long  pos;
 
@@ -305,6 +411,7 @@ __ticks (FIDO this, long offset)
         for (x = 0; x < array_length(this->rules); x++) {
           RULE r = (RULE)array_get(this->rules, x);
           if (__eregi(rule_get_pattern(r), line)) {
+            int   ret;
             if (is_daemon(this->C) == TRUE) {
               logger(this->logger,   "matched %s in %s", rule_get_pattern(r), this->wfile);
               VERBOSE(is_verbose(this->C), "matched %s in %s", rule_get_pattern(r), this->wfile);
@@ -312,6 +419,9 @@ __ticks (FIDO this, long offset)
               VERBOSE(is_verbose(this->C), "matched: %s in %s", line, this->wfile);
             }
             ret = __run_command(this, r);
+            if (ret < 0) {
+              logger(this->logger, "ERROR: unable to run command: %s", this->action);
+            }
           }
         }
         xfree(line);
@@ -482,7 +592,7 @@ __persist(FIDO this, action a)
 
   filename = trim(filename);
 
-  memset(path, 512, '\0');
+  memset(path, '\0', 512);
   snprintf(path, 512, "/tmp/.%s", filename);
 
   if (a == get) {
@@ -501,11 +611,15 @@ __persist(FIDO this, action a)
       close(fd);
     }
   } else {
+    int  ret;
     if ((fd = open(path, O_WRONLY|O_CREAT, 0644)) < 0) {
       return;
     } else {
       snprintf(buf, sizeof(buf), "%ld\n", this->cache);
-      write(fd, buf, strlen(buf));
+      ret = write(fd, buf, strlen(buf));
+      if (ret < 0) {
+        logger(this->logger, "ERROR: unable to write tmp file: %s", path);
+      }
       close(fd);
     } 
   }
@@ -588,7 +702,7 @@ private BOOLEAN
 __exceeds(FIDO this, char *path, int age) {
   int secs = 0;
   struct stat s;
-  char   buf[20]; 
+  char   buf[20];
   struct tm * timeinfo;
 
   if (stat(path,&s) != 0) {
@@ -597,16 +711,17 @@ __exceeds(FIDO this, char *path, int age) {
      * We'll log a warning but continue without rasing
      * an ALERT.
      */
-    logger(this->logger, "WARNING: unable to read %s - in use by another process\n", path);
+    logger(this->logger, "WARNING: unable to read %s - in use by another process", path);
     return FALSE;
   }
 
-  timeinfo = localtime (&(s.st_mtime)); 
-  strftime(buf, 20, "%b %d %H:%M", timeinfo); 
+  timeinfo = localtime (&(s.st_mtime));
+  memset(buf, '\0', sizeof(buf));
+  strftime(buf, 20, "%b %d %H:%M", timeinfo);
 
   secs = (int)difftime(time(NULL), s.st_mtime);
   if (secs > age) {
-    logger(this->logger, "ALERT: %s exceeds %d seconds (%s)\n", path, secs, age, buf);
+    logger(this->logger, "ALERT: %s exceeds %d seconds (%s)", path, age, buf);
     return TRUE;
   }
   return FALSE;
