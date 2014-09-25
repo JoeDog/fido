@@ -150,7 +150,6 @@ parse_cmdline_cfg(CONF C, int argc, char *argv[]) {
 void
 parse_cmdline(CONF C, int argc, char *argv[]) {
   int c = 0;
-  int nargs;
   BOOLEAN display = FALSE;
   while ((c = getopt_long(argc, argv, "Vhvf:CDd:l:p:", long_options, (int *)0)) != EOF) {
   switch (c) {
@@ -190,7 +189,6 @@ parse_cmdline(CONF C, int argc, char *argv[]) {
         break;
     } /* end of switch */
   }   /* end of while  */
-  nargs = argc - optind;
   if (display) {
     show(C, TRUE);
   }
@@ -236,6 +234,9 @@ main(int argc, char *argv[])
       for (i = 0; i < count && crew_get_shutdown(crew) != TRUE; i++) {
         FIDO F = new_fido(C, keys[i]);
         result = crew_add(crew, (void*)start, F);
+        if (result == FALSE) {
+          NOTIFY(FATAL, "%s: [error] unable to spawn additional threads");
+        }
       }
       crew_join(crew, TRUE, &statusp);
       conf_destroy(C);
