@@ -88,6 +88,7 @@ logger(LOG this, const char *fmt, ...)
 private BOOLEAN
 __message(LOG this, const char *fmt, va_list ap)
 {
+  int    ret = 0;
   char   buf[BUFSIZE];
   char   msg[BUFSIZE*2];
   char   hostbuf[BUFSIZE];
@@ -107,7 +108,10 @@ __message(LOG this, const char *fmt, va_list ap)
       flock(this->fd, LOCK_EX);
       memset(msg, '\0', sizeof(msg));
       snprintf(msg, sizeof(msg), "%s %s - %s [%d] %s", date_get(d), hostbuf, program_name, getpid(), buf);
-      write(this->fd, msg, strlen(msg));
+      ret = write(this->fd, msg, strlen(msg));
+      if (ret < 0) {
+        fprintf(stderr, "ERROR: unable to write to file: %s\n", this->file);
+      }
       flock(this->fd, LOCK_UN);
       break;
     case LSTDERR:
