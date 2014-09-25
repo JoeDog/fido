@@ -1,0 +1,186 @@
+=head1 NAME
+
+$_PROGRAM.conf 
+
+=head1 SYNOPSIS
+
+$_PROGRAM.conf 
+
+The default file /etc/$_PROGRAM/$_PROGRAM.conf You can override 
+the default file with the FIDORC ENV variable or the -f /path/file 
+command line option. 
+
+=head1 DESCRIPTION
+
+$_PROGRAM.conf is the configuration file for $_PROGRAM. The file consists
+of two parts, GLOBAL settings and FILE settings. GLOBAL settings are best 
+defined at the top of the file in key = value format. FILE settings are 
+distinguished with a filename followed by brackets {}. Key = value pairs 
+inside the brackets apply only to that file. If a value isn't set at the 
+FILE level, then $_PROGRAM applies a GLOBAL setting. Here's an example:
+
+  # GLOBAL SETTINGS
+  log   = syslog
+  pid   = /var/run/fido.pid
+
+  # FILE SETTINGS
+  /var/log/messages {
+    log = /var/log/fido.log
+  }
+
+In this example, we've set 'log' twice. Once at the GLOBAL level and once
+at the FILE level. The FILE level takes precedent. In this case all logged
+activity for /var/log/messages monitoring will go to /var/log/fido.log If 
+we log activity for other files that don't have a 'log' specified, then it 
+will go to syslog.
+
+Here is a list of available settings:
+
+=head2 log
+
+Use this setting to direct logging output. Its values can be either 'syslog' 
+or '/path/to/file' This option is available at both the GLOBAL and FILE levels. 
+
+  log = syslog
+  log = /var/log/fido.log
+ 
+=head2 pid
+
+Use this setting to assign a file to hold $_PROGRAM's process ID (pid). This
+option is available only at the GLOBAL level. The default setting is 
+/var/run/$_PROGRAM.pid 
+
+  pid = /home/jeff/var/$_PROGRAM.pid
+  
+=head2 daemon
+
+Use this option to run $_PROGRAM in the background as a daemon. By default,
+$_PROGRAM will run as a daemon. This setting is available only at the global
+level. It takes one of two values, true or false. It runs in the foreground 
+when the setting is 'false'
+ 
+=head2 rulesdir
+
+$_PROGRAM monitors a log file and searches for pattern matches. These patterns 
+are regular expressions that can be stored in a rules file. This directive tells
+$_PROGRAM where to look for its rules. By default, it will look in /etc/$_PROGRAM/rules
+You can override the default with this setting. This option is available ONLY at the
+GLOBAL level.
+
+  rulesdir = /usr/local/etc/$_PROGRAM/rules
+
+=head2 rules
+
+This is a FILES level directive that tells $_PROGRAM where to find its pattern
+matches. It can take one of three different values, a regex, the 'modified' directive
+or a file name. If the value is a regex, then $_PROGRAM will use that rule 
+as it parses the file it's watching. If the value is the 'modified' directive, then 
+it will trigger an alert each time the file is modified. If the value is a file name, 
+then it will read $rulesdir/$rules for all it's patterns. The benefit of using a file 
+is that you can set many patterns, one on each line. $_PROGRAM will try each line as 
+it looks for a match.
+
+  rules = modified
+  rules = .*OutOfMemory.*
+  rules = exceeds N seconds|minutes|hours|days
+  rules = haha.conf 
+
+In the first example, $_PROGRAM will trigger an action if the modification date of the 
+file it's monitoring is changed. In the second example, it will tail the file it's 
+monitoring and trigger an action each time it matches the '.*OutOfMemory.*' pattern. In
+the third example, it will triggern an action if the file's timestamp exceeds a designated
+time. If the file we're monitoring is a directory, then an alert will be triggered if any
+file in that directory exceeds the designated time. In the final example, it will trigger 
+an action each time it matches a pattern inside $rulesdir/haha.conf 
+
+=head2 action
+
+This is a FILES level directive that tells $_PROGRAM what to do in the event 
+of a pattern match. Generally, you'll want to specify a script although you 
+can specify a program with parameters:
+
+  action = echo "action alert!!!!" | /usr/sbin/sendmail -v jeff@joedog.org
+  action = /home/jeff/bin/haha
+
+=head2 throttle
+
+This is a FILES level directive which tells $_PROGRAM to delay place a delay between
+actions. This is useful to avoid flooding inboxes with emails or node managers with SMTP
+traps. The trottle format is 'throttle = N denomination' where 'N' is a number and 
+'denomination' is either 'seconds', 'minutes', 'hours' or 'days'. 
+
+  throttle = 15 minutes
+  throttle = 1 hour
+  throttle = 1 day(s) 
+
+=head2 exclude
+
+This is a FILES level directive that only works when you monitor directories with the
+exceeds directive. The format is 'exclude =  [pattern]' where pattern is a regular 
+expression. Consider this:
+
+/export {
+  rule    = exceeds 7 days
+  exclude = ^\.|CVS|Makefile
+}
+
+Given this file block, $_PROGRAM will execute an action if any file inside the directory
+/export is older than 7 days but does NOT start with '.' nor is it named CVS or Makefile.
+
+ 
+=head2 capture
+
+This is a FILES level directive that tells $_PROGRAM to log the output from the
+action directive mentioned above. If you're running sendmail -v, then it will log
+all that verbose output to its selected logging method. Good for debugging it takes
+one of two values, 'true' or 'false' - if false, it won't log output. The default 
+is false
+
+  capture = true
+  capture = false
+
+=head2 user 
+
+This is a GLOBAL setting in which we specify which user ID $_PROGRAM will run under. 
+You'll need to select a user that has read permissions to the file it's monitoring 
+and write permissions to the directory in which it's logging. It is preferred that you
+select the least privileged user possible.
+
+  user = jboss
+
+=head2 group
+
+This is a GLOBAL setting in which we specify with group ID $_PROGRAM will run under.
+Like 'user' we recommend you select the least privileged group possible
+
+  group = jboss
+
+=head1 SAMPLE FILE
+
+  #
+  # Global values 
+  #
+  log      = syslog
+  pid      = /var/run/fido.pid
+  daemon   = true
+  rulesdir = /etc/fido/rules
+  user     = root
+  group    = daemon
+
+  /var/log/httpd/access_log {
+    rules  = .*siege-.*tar.gz.*
+    action = /usr/bin/tally
+    log    = /var/log/fido.log
+  }
+
+  /var/log/maillog {
+   rules  = maillog.conf
+   action = /usr/bin/react
+  }
+
+  /var/log/haha.log {
+    rules   = ^haha.*
+    action  = echo "alert!!!!" | /usr/sbin/sendmail -v jeff@joedog.org
+    capture = true
+  }
+

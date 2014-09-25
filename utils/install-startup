@@ -1,0 +1,40 @@
+#!/bin/sh
+
+
+if [ -e ./fido-redhat-start ] ; then
+  BASE="."
+elif [ -e utils/fido-redhat-start ]; then
+  BASE="utils"
+else
+  echo "Can't find the startup script"
+  echo "Did you run this from the top-level source directory?"
+  echo
+fi
+
+if [ -e /etc/init.d ] ; then
+  cp $BASE/fido-redhat-start /etc/init.d/fido
+  chmod 775 /etc/init.d/fido
+else
+  echo "Can't find /etc/init.d - this doesn't appear to be a supported system"
+  exit 1
+fi
+
+if [ -e /etc/sysconfig ] ; then
+  cp $BASE/fido-redhat-config /etc/sysconfig/fido
+else
+  echo "Can't find /etc/init.d - this doesn't appear to be a supported system"
+  exit 1
+fi
+
+echo "Adding to startup"
+chkconfig --add fido
+
+echo "If you built fido with the default settings (go.sh), then "
+echo "you can configure it inside /etc/fido & start/stop/restart"
+echo "it with the following commands:"
+echo ""
+echo "service fido start"
+echo "service fido stop"
+echo "service fido restart"
+
+

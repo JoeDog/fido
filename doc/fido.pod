@@ -1,0 +1,127 @@
+=head1 NAME
+
+$_PROGRAM is a realish-time log watchdog and alert daemon.
+
+=head1 SYNOPSIS
+
+$_PROGRAM [I<option>]
+
+=head1 DESCRIPTION
+
+$_PROGRAM is a multi-threaded daemon that can watch several files at once.
+It looks for patterns that you configure and executes scripts or programs 
+in the event of a match. $_PROGRAM works in "realish-time" in that it is about
+a second or so behind the clock. 
+
+=head1 OPTIONS
+
+=head2 Option Syntax
+
+Since $_PROGRAM uses GNU getopt to process command-line arguments, every
+option has a long form along with the short one.  Long options are
+more convenient to remember, but take time to type.  You may freely
+mix different option styles, i.e., 
+        
+  $ $_PROGRAM -d --pid=/var/run/fido.pid 
+
+=head2 Startup Options
+
+=over 4
+
+=item B<-V>, B<--version>
+
+Display the version of $_PROGRAM and exit. 
+
+=item B<-h>, B<--help>
+
+Print a help message describing all of $_PROGRAM's command-line options and exit.
+
+=item B<-C>, B<--config>
+
+Prints the default values for all configurable settings. Values are read from the 
+active resource file and command line arguements.
+
+=item B<-f /path/file>, B<--file=/path/file>
+
+This option can be used to specify a $_PROGRAM config file. If none is selected it 
+will attempt to load FIDORC as an ENV variable. If FIDORC is not set, then it will 
+attempt the following files in this order:
+
+  /etc/fido/fido.conf
+  /etc/fido.conf 
+  /usr/local/etc/fido.conf 
+  /usr/local/etc/fido/fido.conf 
+
+At this point, if fido hasn't found a config file, it will try to run off command 
+line arguments. NOTE: Command line arguments take precedent over config file settings.
+
+
+=item B<-d>, B<--daemon> 
+
+This options tells fido to run in the background as a daemon. This is a default option 
+so select this to override the config file.
+
+Sets the network protocol to ICMP. During a netscan, $_PROGRAM can use either ICMP 
+echo (default) or TCP/IP connect for discovery. This option sets the protocol to ICMP. 
+This option is like pinging hosts on a network with the ping utility. ICMP requires 
+raw sockets. Therefore, $_PROGRAM must either be run as root or setuid root. 
+(see ERRORS below).
+
+=item B<-p /path/file>, B<--pid=/path/file> 
+
+By default, $_PROGRAM writes a pid file to /var/run/fido.pid You may override that location
+with this option, $_PROGRAM --pid=/var/lib/run/fido.pid
+
+=item B<-l VAL>, B<--log=VAL>
+
+Use this option to specify a logging method. The values can be "/path/to/file" or "syslog"
+$_PROGRAM can either log its messages to syslog or it can use its own internal logging mechanism
+to write to a specified file.
+
+=back
+
+=head1 CONFIG FILE
+
+=over 4
+
+$_PROGRAM's configurable options can be set and stored in config files. All stored 
+settings can be overridden with command line arguments. If a logging mechanism is set 
+in config file, it can be overridden with --log. $_PROGRAM reads config files 
+in a priortized fashion. The ENV variable FIDORC is the highest. That is followed by 
+'-f /path/file' and by the system defaults:
+
+  /etc/fido/fido.conf
+  /etc/fido.conf
+  /usr/local/etc/fido.conf
+  /usr/local/etc/fido/fido.conf
+
+Here is an example that sets an ENV variable and invokes the program:
+
+  $ FIDORC=/home/jeff/haha $_PROGRAM -d 
+
+=back
+
+=head1 AUTHOR
+
+=over 4
+
+$_AUTHOR <$_EMAIL>
+
+=back
+
+=head1 SEE ALSO
+
+=over 4
+
+fido.conf(5)
+
+=head1 COPYRIGHT
+
+=over 4
+
+Copyright (C) $_YEARS by $_AUTHOR
+
+This is free software; see the source for copying conditions.
+There is NO warranty; not even for MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.
+

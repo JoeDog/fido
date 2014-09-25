@@ -1,0 +1,126 @@
+# FIDO ChangeLog 
+# Maintainer: Jeffrey Fulmer <jeff at joedog dot org>
+# Date:       Wed Dec 21 10:38:16 EST 2011
+# Version:    1.00
+
+2013/08/19 2013/12/04 Jeffrey Fulmer <http://www.joedog.org/support/>
+ * FIDO RELEASE            RELEASE_1-1-2_AUG-19-2014
+ * src/fido.c              fixed args problem to the logger (yeah, ugh)
+ * src/version.c           Version increment: 1.1.2
+
+2013/12/04 Jeffrey Fulmer <http://www.joedog.org/support/>
+ * FIDO RELEASE            RELEASE_1-1-1_DEC-04-2013
+ * src/fido.c              __exceeds no longer treats stat failure as a failure
+ * src/version.c           Version increment: 1.1.1
+
+2013/10/17 Jeffrey Fulmer <http://www.joedog.org/support/>
+ * FIDO RELEASE            RELEASE_1-1-0_OCT-17-2013
+ * src/version.c           Version increment: 1.1.0
+
+2013/10/10 Jeffrey Fulmer <http://www.joedog.org/support/>
+ * FIDO BETA               RELEASE_1-1-0-beta4_OCT-10-2013
+ * src/main.c              Updated copyright info
+ * src/fido.c              Major overhaul to include age checks
+ * src/conf.c              Parse and present new features 
+ * src/hash.c              Improved the hashing alg. Lifted from siege
+ * src/throttle.c          Added to the distribution
+ * src/version.c           Version increment: 1.1.0-beta4
+
+2013/06/12  Roman Mohr <roman@NOSPAMfenkhuber.at>
+ * FIDO BETA               RELEASE_1-1-0-beta3_JUL-31-2013
+ * COPYING                 Updated GNU Public License
+ * src/runner.c            Moved memory allocation to after the input checks
+ * src/conf.c              Free'd individual components of the class
+ * src/main.c              Deconstruct PID, CONF and RUNNER
+ * src/date.c              Increased the buf for date by one byte
+ * src/version.c           Version increment: 1.1.0-beta3
+
+2013/06/11  Roman Mohr <roman@NOSPAMfenkhuber.at>
+ * FIDO BETA               RELEASE_1-1-0-beta2_JUN-11-2013
+ * doc/Makefile.am         Fixed the sample conf install
+ * utils/Makefile.am       Added fido.service to the distro
+
+2013/06/10  Roman Mohr <roman@NOSPAMfenkhuber.at>
+ * FIDO BETA               RELEASE_1-1-0-beta1_JUN-10-2013
+ * lib src                 Updated FSF's address
+ * src/base16.c            Added 1 byte to the return buffer in encode/decode
+ * src/conf.c              Check the value of the *optionptr in parse loop
+ * src/runner.c            Added 'setgroups' to drop privs before switching user & group.
+ * fido.service            Added to the distribution
+
+2013/03/04  Jeffrey Fulmer <http://www.joedog.org/support/>
+ * FIDO RELEASE            RELEASE_1-09_APR-10-2013
+ * lib/joedog              Applied changes from siege to fido
+
+2013/03/04  Jeffrey Fulmer <http://www.joedog.org/support/>
+ * FIDO RELEASE            RELEASE_1-08_MAR-04-2013
+
+2013/03/04  Jeffrey Fulmer <http://www.joedog.org/support/>
+ * src/base16.c            Fixed two memsets with len and char swapped
+ * src/fido.c              Added a forever loop to the parser
+ * src/pid.c               Removed pids array; storing one int
+ * src/version.c           Version increment: 1.0.8
+
+2012/05/22 Jeffrey Fulmer <http://www.joedog.org/support/>
+ * FIDO RELEASE            RELEASE_1-07_MAY-22-2012
+
+2012/05/08 Jeffrey Fulmer <http://www.joedog.org/support/>
+ * FIDO BETA               RELEASE_1-07b2_MAY-09-2012
+ * src/base16.c            Added to the distribution
+ * src/base16.h            Added to the distribution
+ * src/fido.c              Added logic to handle time stamp monitoring
+ * src/version.c           Increment to 1.0.7b2
+
+2012/04/10 Jeffrey Fulmer <http://www.joedog.org/support/>
+ * FIDO BETA               RELEASE_1-07b1_APR-04-2012
+ * src/main.c              Added each additional file to the crew
+
+2012/02/12 Jeffrey Fulmer <jeff at joedog dot org>
+ * FIDO RELEASE            RELEASE_1-06_FEB-14-2012
+ * src/main.c              Added an true|false value for -d/--daemon=[true|false]
+ * lib/notify.c            Added VERBOSE(boolean, "%s") for verbosity
+ * src/fido.c              Added verbose output for running in foreground
+
+2012/02/04 Jeffrey Fulmer <jeff at joedog dot org>
+ * lib/notify.c            Added VERBOSE(LEVEL, BOOLEAN, "%s") for vebosity
+ * src/main.c              Added optional arg for --daemon (no arg means true)
+ * src/version.c           Increment to 1.0.6
+
+2012/01/27 Jeffrey Fulmer <jeff at joedog dot org>
+ * FIDO RELEASE            RELEASE_1-05_JAN-27-2012
+
+2012/01/27 Jeffrey Fulmer <jeff at joedog dot org>
+ * src/fido.c              Removed a ! from an if-check for file existance
+                           (That was pretty much of a brain fart)
+
+2012/01/26 Jeffrey Fulmer <jeff at joedog dot org>
+  * FIDO RELEASE           RELEASE_1-04_JAN-26-2012
+
+2012/01/26 Jeffrey Fulmer <jeff at joedog dot org>
+ * configure.in            Added checks for regex.h
+ * src/rule.c              Use system regex if available
+
+2012/01/23 Jeffrey Fulmer <jeff at joedog dot org>
+  * FIDO RELEASE           RELEASE_1-03_JAN-23-2011
+
+2012/01/21 Jeffrey Fulmer <jeff at joedog dot org>
+ * fido-redhat-config      Added to the distribution
+ * fido-redhat-start       Added to the distribution
+ * install-startup         Added to the distribution 
+
+2012/01/21 Jeffrey Fulmer <jeff at joedog dot org>
+  * FIDO RELEASE           RELEASE_1-02_JAN-21-2011
+
+2012/01/21 Jeffrey Fulmer <jeff at joedog dot org>
+ * src/fido.c              fixed a memory leak
+
+2011/01/20 Jeffrey Fulmer <jeff at joedog dot org>
+  * FIDO RELEASE           RELEASE_1-01_JAN-20-2011
+
+2012/01/20 Jeffrey Fulmer <jeff at joedog dot org>
+ * src/fido.c              changed the pattern assignment to snprint
+ * src/array.c             reworked the object to prevent segfault
+
+2011/12/22 Jeffrey Fulmer <jeff at joedog dot org>
+  * FIDO DEBUT RELEASE     RELEASE_1-00_DEC-22-2011
+

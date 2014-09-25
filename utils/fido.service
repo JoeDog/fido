@@ -1,0 +1,10 @@
+[Unit]
+Description= Fido, a multi-threaded file watch utility
+Documentation=man:fido(8) man:fido.conf(8)
+
+[Service]
+Type=forking
+ExecStart=/usr/sbin/fido -f /etc/fido/fido.conf -d true
+
+[Install]
+WantedBy=multi-user.target

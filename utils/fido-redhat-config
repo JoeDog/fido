@@ -1,0 +1,4 @@
+#
+# Set the runtime arguments
+FIDOARGS="-f /etc/fido/fido.conf"
+

@@ -1,0 +1,115 @@
+#
+# Global values 
+#
+
+# 
+# log - select a mechanism for logging fido 
+# daemon information. The choices are syslog
+# or a path to a file.
+#
+# example: log = /var/log/fido.log
+#
+log      = syslog
+
+#
+# pid - the location of the fido pid file. This
+# is helpful for auxillary scripts that start and
+# stop the daemon. This distribution includes a 
+# redhat startup script inside the utils directory.
+#
+# example: pid = /var/run/fido.pid
+#
+pid      = /var/run/fido.pid
+
+#
+# daemon - instructs fido to run in the background 
+# 'true' or in the foreground 'false'. 
+# 
+# example: daemon = false
+#
+daemon   = true
+
+#
+# vebose - if true, this instructs fido to print debugging 
+# information to stdout. It's only useful to set this to 
+# true when running the program in the foreground (daemon = false)
+# 
+# example: verbose = true
+#
+verbose  = false
+
+#
+# rulesdir - this directive tells fido where to look for its
+# rules files. If you set it to '/etc/fido/rules' and set 
+# rules = haha.conf in a file block, then fido will look for 
+# that file's rules in /etc/fido/rules/haha.conf
+#
+# exmaple: rulesdir = /usr/local/etc/fido/rules
+#
+rulesdir = /etc/fido/rules
+
+#
+# user - instructs fido to run as a specified users. If this 
+# directive isn't set, then fido will run as the user who 
+# who invoked the daemon.
+#
+# example: user = jdfulmer
+#
+# user = root
+
+#
+# group - instructs fido to run with specified group ownership. 
+# If this directive isn't set, then fido will run user the primary 
+# group of the user who invoked the daemon.
+#
+# example: group = jdfulmer
+#
+# group = wheel
+
+#
+# SAMPLE FILE BLOCKS
+#
+
+#
+# This configuration runs an action if the file is 
+# modified, i.e., it's modification time changes.
+#
+# /data/ftpd/pub/upload.txt {
+#   rules  = modified
+#   action = echo "upload.txt was modified" | sendmail -v jeff@haha.com
+#   log    = /home/jdfulmer/var/my.log
+# }
+
+#
+# This configuration executes an action if any file
+# inside the /export directory is older than 7 days
+# as long as that file does NOT begin with . nor is
+# it named CVS or Makefile
+#
+# /export {
+#   rules   = exceeds 7 days
+#   exclude = ^\.|CVS|Makefile
+#   action  = /usr/local/bin/sendtrap.sh
+# }
+
+#
+# This configuration runs an action if OutOfMemoryError 
+# suddenly appears in the log file
+# 
+# /var/log/jboss/catalina.out {
+#   rules  = .*OutOfMemoryError.*
+#   action = /usr/local/bin/sendtrap.sh
+#   log    = syslog
+# }
+
+#
+# This configuration runs an action if any of the 
+# patterns contained in /etc/fido/rules/apache.conf 
+# is suddenly matched.
+#
+# /var/log/httpd/access_log {
+#  rules  = apache.conf
+#  action = /usr/local/bin/sendpage.sh
+# }
+
+

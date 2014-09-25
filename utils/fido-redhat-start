@@ -1,0 +1,87 @@
+#! /bin/bash
+#
+# fido         Start/Stop the fido log monitoring daemon.
+#
+# description: Fido is a file monitoring and notification daemon
+# chkconfig:   2345 90 60
+# processname: /usr/sbin/fido
+# config:      /etc/fido/fido.conf
+# pidfile:     /var/run/fido.pid
+
+RETVAL=0
+NAME="fido"
+FIDO="/usr/sbin/fido"
+LOCK_FILE=/var/lock/subsys/fido
+
+# Source function library.
+. /etc/init.d/functions
+
+# set sysconfig settings
+[ -f /etc/sysconfig/fido ] && . /etc/sysconfig/fido
+
+[ -f /etc/sysconfig/fido ] || exit 6
+
+start() {
+  echo -n $"Starting $NAME: "
+  daemon $FIDO $FIDOARGS && success || failure
+  RETVAL=$?
+  [ "$RETVAL" = 0 ] && touch $LOCK_FILE
+  echo
+}
+
+stop() {
+  echo -n $"Stopping $NAME: "
+  if [ -n "`pidfileofproc $FIDO`" ]; then
+    killproc $FIDO
+    RETVAL=3
+  else
+    failure $"Stopping $NAME"
+  fi
+  RETVAL=$?
+  [ "$RETVAL" = 0 ] && rm -f $LOCK_FILE
+  echo
+}	
+
+reload() {
+  echo -n $"Reloading $NAME: "
+  if [ -n "`pidfileofproc $FIDO`" ]; then
+    killproc $FIDO -HUP
+  else
+    failure $"Reloading $NAME"
+  fi
+  RETVAL=$?
+  echo
+}	
+
+case "$1" in
+  start)
+  	start
+	;;
+  stop)
+  	stop
+	;;
+  restart)
+	stop
+  	start
+	;;
+  reload)
+  	reload
+	;;
+  status)
+	status $FIDO
+	;;
+  condrestart)
+    if [ -f  $LOCK_FILE ]; then
+      if [ "$RETVAL" = 0 ]; then
+        stop
+        sleep 3
+        start
+      fi
+    fi
+    ;;
+  *)
+  echo $"Usage: $0 {start|stop|status|reload|restart|condrestart}"
+  RETVAL=3
+esac
+exit $RETVAL
+
