@@ -97,6 +97,7 @@ show(CONF this, BOOLEAN quit)
     puts("    [none defined]");
   }
   for (x = 0; x < hash_get_entries(this->items) && keys[x] != NULL; x ++) {
+    puts(keys[x]);
     char *tmp;
     tmp = hash_get(this->items, "%s:rules", keys[x]);
     if (tmp) {
@@ -105,6 +106,8 @@ show(CONF this, BOOLEAN quit)
       } else if (strmatch(tmp, "modified")) {
         printf("     rules:  if modified\n");
       } else if (! strncmp(tmp, "exceeds", 7)) {
+        printf("     rules:  %s\n", tmp);
+      } else if (strmatch(tmp, "recurse")) {
         printf("     rules:  %s\n", tmp);
       } else {
         printf("     rules:  %s/%s\n", this->rulesdir, tmp);
@@ -117,6 +120,10 @@ show(CONF this, BOOLEAN quit)
     tmp = hash_get(this->items, "%s:exclude", keys[x]);
     if (tmp) {
       printf("   exclude:  %s\n", tmp);
+    }
+    tmp = hash_get(this->items, "%s:recurse", keys[x]);
+    if (tmp) {
+      printf("   recurse:  %s\n", tmp);
     }
     tmp = hash_get(this->items, "%s:user", keys[x]);
     if (tmp) {
@@ -155,6 +162,8 @@ conf_get_rules(CONF this, char *key)
       snprintf(ret, 1024, "%s", tmp);
     } else if (strmatch(tmp, "modified")) {
       snprintf(ret, 1024, "%s", tmp);
+    } else if (strmatch(tmp, "recurse")) {
+      snprintf(ret, 1024, "%s", tmp);
     } else if (! strncmp(tmp, "exceeds", 7)) {
       snprintf(ret, 1024, "%s", tmp);
     } else {
@@ -179,6 +188,13 @@ char *
 conf_get_exclude(CONF this, char *key)
 {
   return hash_get(this->items, "%s:exclude", key);
+}
+
+BOOLEAN 
+conf_get_recurse(CONF this, char *key) {
+  char *str = hash_get(this->items, "%s:recurse", key);
+  if (str == NULL) return FALSE;
+  return strmatch(str, "true");
 }
 
 char * 

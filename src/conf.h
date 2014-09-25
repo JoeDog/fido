@@ -36,6 +36,7 @@ char *   conf_rules_dir(CONF this);
 char *   conf_get_rules(CONF this, char *key);
 char *   conf_get_action(CONF this, char *key);
 char *   conf_get_exclude(CONF this, char *key);
+BOOLEAN  conf_get_recurse(CONF this, char *key); 
 char *   conf_get_throttle(CONF this, char *key);
 char *   conf_get_log(CONF this, char *key);
 char *   conf_get_user(CONF this);
