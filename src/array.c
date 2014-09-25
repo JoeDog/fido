@@ -9,7 +9,6 @@ struct ARRAY_T
   int     index;
   int     capacity;
   void    **data;
-  //ARRAY   next;
 };
 
 /**
