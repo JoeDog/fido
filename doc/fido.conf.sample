@@ -84,12 +84,14 @@ rulesdir = /etc/fido/rules
 # This configuration executes an action if any file
 # inside the /export directory is older than 7 days
 # as long as that file does NOT begin with . nor is
-# it named CVS or Makefile
+# it named CVS or Makefile. If recure is true, then
+# fido will search subdirectories. 
 #
 # /export {
 #   rules   = exceeds 7 days
 #   exclude = ^\.|CVS|Makefile
 #   action  = /usr/local/bin/sendtrap.sh
+#   recurse = true
 # }
 
 #
