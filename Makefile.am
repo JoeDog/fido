@@ -1,9 +1,9 @@
 ##
 ## Makefile.am
 ##
-## Copyright (C) 2008 by 
+## Copyright (C) 2008-2014 by 
 ## Jeffrey Fulmer - <jeff@joedog.org>, et al.
-## This file is distributed as part of Riffle
+## This file is distributed as part of Fido
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ SUBDIRS           =    . include lib src utils doc
 
 DIST_SUBDIRS      =    $(SUBDIRS)
 
-EXTRA_DIST        =    ChangeLog README acspecific.m4 aclocal.m4 acinclude.m4 go.sh
+EXTRA_DIST        =    ChangeLog README.md acspecific.m4 aclocal.m4 acinclude.m4 go.sh
 
 DISTCLEANFILES    =    libtool config.status 
 
