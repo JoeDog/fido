@@ -131,7 +131,8 @@ Given this file block, $_PROGRAM will execute an action if any file inside the d
 =head2 recurse
 
 This is a FILES level directive that that only works when you monitor directories. If
-recurse is true, then fido will search all subdirectories below the path.
+recurse is true, then fido will search all subdirectories below the path. If recurse is
+false then fido will only examine files inside the top-level directory.
 
 /export {
   rule    = exceeds 1 month
