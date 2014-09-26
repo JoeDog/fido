@@ -128,6 +128,16 @@ Given this file block, $_PROGRAM will execute an action if any file inside the d
 /export is older than 7 days but does NOT start with '.' nor is it named CVS or Makefile.
 
  
+=head2 recurse
+
+This is a FILES level directive that that only works when you monitor directories. If
+recurse is true, then fido will search all subdirectories below the path.
+
+/export {
+  rule    = exceeds 1 month
+  recurse = true 
+}
+
 =head2 capture
 
 This is a FILES level directive that tells $_PROGRAM to log the output from the
