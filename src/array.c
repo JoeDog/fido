@@ -1,158 +1,150 @@
-#include <stdio.h> 
-#include <string.h>
+/**
+ * Dynamic Array
+ *
+ * Copyright (C) 2006-2014 by
+ * Jeffrey Fulmer - <jeff@joedog.org>, et al.
+ * This file is distributed as part of Fido
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *--
+ */
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <limits.h>
 #include <array.h>
+#include <joedog/joedog.h>
+
+#include <util.h>
+
+typedef void *array;
 
 struct ARRAY_T
-{ 
-  int     size;
-  int     index;
-  int     capacity;
-  void    **data;
+{
+  int    index;
+  int    length;
+  array  *data;
 };
 
-/**
- * private functions
- */
-static void __expand(ARRAY this, int min); 
+size_t ARRAYSIZE = sizeof(struct ARRAY_T);
 
-ARRAY 
-new_array()
-{
+ARRAY
+new_array(){
   ARRAY this;
-  this           = calloc(sizeof(*this), 1);
-  this->size     = 0;
-  this->index    = 0;
-  this->capacity = 0;
-  this->data     = NULL;
+
+  this = xcalloc(sizeof(struct ARRAY_T), 1);
+  this->index  = -1;
+  this->length =  0;
   return this;
 }
 
-ARRAY 
-array_destroy(ARRAY this)
+ARRAY
+array_destroy(ARRAY this) 
 {
-  int x;
+  int i;
 
-  if (this == NULL) {
-    return this;
-  }
-  for (x = 0; x < this->size; x++) {
-    free(this->data[x]); 
-  }  
-  free(this->data);
-  free(this);
-  return NULL;
-}
-
-int
-array_length(ARRAY this)
-{
-  return this->size;
+  for (i = 0; i < this->length; i++) {
+    xfree(this->data[i]);  
+  } 
+  xfree(this->data);
+  xfree(this);
+  this = NULL;
+  return this; 
 }
 
 void 
 array_push(ARRAY this, void *thing)
 {
-  if (this->size >= this->capacity) {
-    __expand(this, this->size + 1);
-  }
-  this->data[this->size++] = thing;
+  int len = 0;
+
+  if (thing==NULL) return;
+
+  len = strlen(thing)+1;
+  array_npush(this, (void*)thing, len);
+  return;
 }
 
-void 
-array_insert(ARRAY this, void *thing, int index)
+void
+array_npush(ARRAY this, void *thing, size_t len) 
 {
-  if (this->size >= this->capacity)
-    __expand(this, this->size + 1);
-  if (index > this->size)
-    index = this->size;
-  if (index < this->size)
-    memmove(&this->data[index + 1], &this->data[index], (this->size - index) * sizeof(void *));
-  this->data[index] = thing;
-  this->size++;
+  array arr;
+  if (thing==NULL) return;
+  if (this->length == 0) {
+    this->data = xmalloc(sizeof(array));
+  } else {
+    this->data = realloc(this->data,(this->length+1)*sizeof(array)); 
+  }
+  arr = xmalloc(len+1); 
+  memset(arr, '\0', len+1);
+  memcpy(arr, thing, len);
+  this->data[this->length] = arr;
+  this->length += 1;
+  return;
 }
 
 void *
 array_get(ARRAY this, int index)
 {
+  if (index > this->length) return NULL;
+
   return this->data[index];
 }
 
 void *
 array_next(ARRAY this) 
 {
-  void *thing = this->data[this->index];
-  this->index = (this->index == this->size - 1) ? 0 : this->index + 1;
-  return thing;
+  this->index++;
+  return this->data[(this->index) % this->length]; 
 }
 
-static void
-__expand(ARRAY this, int min)
+void *
+array_prev(ARRAY this) 
 {
-  int       delta;
-  const int increment = 16;
- 
-  if (this->capacity > min) {
-    puts("we have the capacity");
-    return; // we have the capacity
-  }
+  this->index--;
+  return this->data[((this->index) + (this->length - 1)) % this->length] ;  
+}
 
-  delta  = min;
-  delta += increment - 1;
-  delta /= increment;
-  delta *= increment;
-  delta = (delta < 1) ? 1 : delta;
-  this->capacity += delta;
-  this->data = (this->data != NULL) ?
-               realloc(this->data, this->capacity * sizeof(*this->data)) :
-               malloc(this->capacity * sizeof(*this->data));
-  memset(this->data + this->size, 0, (this->capacity - this->size) * sizeof(void *));  
+size_t
+array_length(ARRAY this)
+{
+  return this->length; 
 }
 
 #if 0
-
-static const char *matches[] = {
-  "ABOUT: .*about",  
-  "FROM: .*jeff@joedog.org$",  
-  "TO: .*jdfulmer@armstrong.com",  
-  "OHMY: .*ah hoo!.*",  
-  "DZAE: .*whoohoo!.*",  
-  "Z22AD: .*z22ad.*"
-};
-
-#include <rule.h>
-
 int
-array_test()
+main (int argc, char *argv[])
 {
   int   x;
-  ARRAY A = new_array();
+  ARRAY A = new_array(30);
 
-  for (x = 0; x < 6; x ++) {
-    RULE R = new_rule(matches[x]);
-    array_push(A, R);
+  if (argc > 1) {
+    for (x = 1; x < argc; x++)
+      array_npush(A, new_url(argv[x]), sizeof(struct _URL));
+  } else {
+    printf("usage: %s <url> [...]\n", argv[0]);
+    return 0;
   }
 
-  x = 0;
-  while (x < 1000) {
-    RULE R = array_next(A);
-    printf("LABEL: (%s), RULE: (%s)\n", rule_get_property(R), rule_get_pattern(R));
-    if (x % 25 == 0){
-      array_insert(A, new_rule("HAHA: .*thisIsIt$"), 3);
-    }
-    x++;
+  for (x = 0; x < 10; x++) {
+    URL U = (URL)array_next(A);
+    printf("|%s|\n",  U->iface->getParameters(U) );
   }
-  A = array_destroy(A);
+  //for (x = 0; x < 10; x++) {
+  //  printf("|%s|\n", ((char*)array_prev(A)));
+  //}
 
-  return 0;
-}
-
-int
-main()
-{
-  int x;
-  for( x = 0; x < 5; x++ )
-    array_test(); 
   return 0;
 }
 #endif
