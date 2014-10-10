@@ -8,6 +8,7 @@
 #include <fido.h>
 #include <throttle.h>
 #include <logger.h>
+#include <rset.h>
 #include <rule.h>
 #include <base16.h>
 #include <util.h>
@@ -60,9 +61,9 @@ private BOOLEAN  __is_readable (FIDO this);
 private long     __ticks (FIDO this, long offset);
 private long     __get_offset (FIDO this);
 private BOOLEAN  __is_directory(char *path); 
-private BOOLEAN  __eregi(char *pattern, char *string);
-private BOOLEAN  __ereg (char *pattern, char *string);
-private BOOLEAN  __regex(char *pattern, char *string, int cflags);
+private RSET     __eregi(char *pattern, char *string);
+private RSET     __ereg (char *pattern, char *string);
+private RSET     __regex(char *pattern, char *string, int cflags);
 private BOOLEAN  __read_rules(FIDO this);
 private long     __seconds_since_90(char *file);
 private int      __run_command(FIDO this, RULE r);
@@ -185,6 +186,7 @@ __agecheck(FIDO this, char *dir)
       /**
        * We're monitoring a directory
        */
+      RSET   rset;
       const char    *name;
       struct dirent *entry;
 
@@ -193,8 +195,9 @@ __agecheck(FIDO this, char *dir)
         break;
       }
       name = entry->d_name;
-      
-      if (! __ereg(this->exclude, entry->d_name) && strcmp(name, "..") != 0 && strcmp(name, ".") != 0 ) {
+     
+      rset =  __ereg(this->exclude, entry->d_name); 
+      if (! rset_get_result(rset) != 0 && strcmp(name, "..") && strcmp(name, ".") != 0 ) {
         int len;
         char path[MAXPATH];
 
@@ -217,6 +220,7 @@ __agecheck(FIDO this, char *dir)
            __agecheck(this, path);
         }
       }
+      rset = rset_destroy(rset);
     }
   }
   if (closedir(D)) {
@@ -226,76 +230,6 @@ __agecheck(FIDO this, char *dir)
   return TRUE;
 }
 
-#if 0
-private BOOLEAN 
-__start_agecheck(FIDO this, char *path) 
-{
-  int sec = __parse_time(this->rfile);
-  while (TRUE) {
-    char rule[256];
-    if (! __is_directory(this->wfile)) {
-      if (__exceeds(this, this->wfile, sec) == TRUE) {
-        snprintf(rule, 256, "EXCEEDS: %s", this->wfile);
-        __run_command(this, new_rule(rule));
-      }
-    } else {
-      DIR *dir;
-      struct dirent *entry;
-      if ((dir = opendir (path)) != NULL) {
-        while ((entry = readdir (dir)) != NULL) {
-          int  len = 0;
-          char tmp[MAXPATH];
-          if (! entry) {
-            break;
-          }
-          if (! __ereg(this->exclude, entry->d_name)) {
-            /** 
-             * XXX:  we need to test for an ending slash on
-             * this->wfile in order to avoid a double-slash
-             */
-            len = snprintf(tmp, MAXPATH, "%s/%s", path, entry->d_name);
-            if (len >= MAXPATH) {
-              logger(this->logger, "FATAL: the path length has grown too long.");
-              exit(1);
-            }
-            if (__exceeds(this, tmp, sec) == TRUE) {
-              if (is_daemon(this->C) == TRUE) {
-                logger(this->logger,   "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
-                VERBOSE(is_verbose(this->C), "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
-              } else {
-                VERBOSE(is_verbose(this->C), "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
-              }
-              snprintf(rule, 256, "EXCEEDS: %s", path);
-              __run_command(this, new_rule(rule));
-            }
-            printf("THIS->RECURSE (%s): %d => %d\n", entry->d_name, this->recurse, entry->d_type & DT_DIR);
-            if ((this->recurse) && (entry->d_type & DT_DIR)) {
-              printf("DIRECTORY: %s\n", entry->d_name);
-              if (strcmp (entry->d_name, "..") != 0 && strcmp(entry->d_name, ".") != 0) {
-                char npath[MAXPATH];
-
-                len = snprintf(npath, MAXPATH, "%s/%s", path, entry->d_name);
-                printf ("%s\n", npath);
-                if (len >= MAXPATH) {
-                  logger(this->logger, "FATAL: the path length has grown too long.");
-                  exit(1);
-                }
-                __start_agecheck(this, npath);
-              }
-            } else {
-              printf("WTF? Not in recurse: %s\n", path);
-            }
-          } 
-        }
-        closedir (dir);
-      } else {
-        return FALSE;
-      }
-    }
-    sleep(1);
-  }
-}
-#endif
 
 
 private BOOLEAN
@@ -408,9 +342,12 @@ __ticks (FIDO this, long offset)
       line = fgetline(fp);
       if (line != NULL) {
         int x;
-        for (x = 0; x < array_length(this->rules); x++) {
+        for (x = 0; x < (int)array_length(this->rules); x++) {
+          RSET rset;
           RULE r = (RULE)array_get(this->rules, x);
-          if (__eregi(rule_get_pattern(r), line)) {
+          // XXX: do we want a condition or a an arg to __eregi for the capture??
+          rset = __eregi(rule_get_pattern(r), line);
+          if (rset_get_result(rset) == TRUE) {
             int   ret;
             if (is_daemon(this->C) == TRUE) {
               logger(this->logger,   "matched %s in %s", rule_get_pattern(r), this->wfile);
@@ -418,7 +355,8 @@ __ticks (FIDO this, long offset)
             } else {
               VERBOSE(is_verbose(this->C), "matched: %s in %s", line, this->wfile);
             }
-            ret = __run_command(this, r);
+            ret  = __run_command(this, r);
+            rset = rset_destroy(rset);
             if (ret < 0) {
               logger(this->logger, "ERROR: unable to run command: %s", this->action);
             }
@@ -441,44 +379,66 @@ __ticks (FIDO this, long offset)
   return offset;
 }
 
-private BOOLEAN
+private RSET
 __eregi(char *pattern, char *string) 
 {
   return __regex(pattern, string, REG_ICASE|REG_EXTENDED);
 }
 
-private BOOLEAN
+private RSET
 __ereg(char *pattern, char *string) 
 {
   return __regex(pattern, string, REG_EXTENDED);
 }
 
 
-static BOOLEAN
+static RSET
 __regex (char *pattern, char *string, int cflags)
 {
-  int     res;
-  regex_t reg;
-  regmatch_t pm[10];
-  char ebuf[128];
-  const size_t nmatch = 10;
+  int         res = 0;
+  int         cnt = 0;
+  regex_t     reg;
+  regmatch_t *grp;
+  char        buf[128];
+  RSET rset = new_rset();
+  rset_set_result(rset, FALSE);
 
-  if (!pattern) return FALSE;
-  if (!string)  return FALSE;
+  if (!pattern) return rset;
+  if (!string)  return rset;
   
   res = regcomp(&reg, pattern, cflags);
   if (res != 0) {
-    regerror(res, &reg, ebuf, sizeof(ebuf));
-    return FALSE;
+    regerror(res, &reg, buf, sizeof(buf));
+    regfree(&reg);
+    return rset;
   }
-  res = regexec(&reg, string, nmatch, pm, 0);
+
+  cnt = reg.re_nsub + 1;
+  grp = (regmatch_t*)xmalloc(cnt * sizeof(regmatch_t));
+
+  res = regexec(&reg, string, cnt, grp, 0);
+  if (res == 0) {
+    int i;
+
+    rset_set_result(rset, TRUE);
+    for (i = 1; i < cnt; i++) {
+      if (grp[i].rm_so == -1)
+        break;
+
+      char *copy = malloc(strlen(string) + 1);
+      memset(copy, '\0', strlen(string) +1);
+
+      strcpy(copy, string);
+      copy[grp[i].rm_eo] = '\0';
+      rset_add(rset, "%s", copy + grp[i].rm_so);
+      xfree(copy);
+    }
+  }
+
   regfree(&reg);
-  if (res == REG_NOMATCH){
-    return FALSE;
-  } else {
-    return TRUE;
-  }
-  return FALSE;
+  xfree(grp);
+
+  return rset;
 }
 
 BOOLEAN
