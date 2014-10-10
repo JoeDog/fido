@@ -45,6 +45,7 @@ hash.c     hash.h           \
 logger.c   logger.h         \
 pid.c      pid.h            \
 main.c     ansidecl.h       \
+rset.c     rset.h           \
 rule.c     rule.h           \
 runner.c   runner.h         \
 throttle.c throttle.h       \
