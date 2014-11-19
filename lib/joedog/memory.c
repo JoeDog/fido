@@ -36,13 +36,13 @@ xstrdup(const char *str)
   register size_t len; 
 #endif/*HAVE_STRDUP*/
 
-  if(!str){
-    NOTIFY(ERROR, "string has no value!");
+  if (!str) {
     return NULL;
   }
+
 #ifdef HAVE_STRDUP
   ret = strdup(str);
-  if(ret==NULL) NOTIFY(FATAL, "xstrdup: unable to allocate additional memory"); 
+  if (ret==NULL) NOTIFY(FATAL, "xstrdup: unable to allocate additional memory"); 
 #else
   len = strlen(str)+1;
   ret = malloc(len);
@@ -65,7 +65,7 @@ xstrcat(const char *arg1, ...)
 
   va_start(valist, arg1);
 
-  for(argptr = arg1; argptr != NULL; argptr = va_arg(valist, char *))
+  for (argptr = arg1; argptr != NULL; argptr = va_arg(valist, char *))
     len += strlen(argptr);
 
   va_end(valist);
@@ -76,7 +76,7 @@ xstrcat(const char *arg1, ...)
   va_start(valist, arg1);
 
   nargs = 0;
-  for(argptr = arg1; argptr != NULL; argptr = va_arg(valist, char *)) {
+  for (argptr = arg1; argptr != NULL; argptr = va_arg(valist, char *)) {
     len = strlen(argptr);
     memcpy(resptr, argptr, len);
     resptr += len;
