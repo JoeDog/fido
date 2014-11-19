@@ -1,7 +1,7 @@
 /**
  * Fido - a log file watcher
  *
- * Copyright (C) 2011-2013 by  
+ * Copyright (C) 2011-2014 by  
  * Jeffrey Fulmer - <jeff@joedog.org>, et al. 
  * This file is distributed as part of Fido
  *
