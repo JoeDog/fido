@@ -66,9 +66,11 @@ private RSET     __ereg (char *pattern, char *string);
 private RSET     __regex(char *pattern, char *string, int cflags);
 private BOOLEAN  __read_rules(FIDO this);
 private long     __seconds_since_90(char *file);
-private int      __run_command(FIDO this, RULE r);
+private int      __run_command(FIDO this, char *cmd);
+private char *   __build_command(FIDO this, RULE rule);
 private int      __parse_time(char *p);
-private BOOLEAN  __exceeds(FIDO this, char *path, int age);
+private BOOLEAN  __exceeds(FIDO this, char *path, int age); 
+private char *   __evaluate(ARRAY array, char *cmd);
 private void     __persist(FIDO this, action a);
 
 
@@ -132,7 +134,9 @@ __start_watcher(FIDO this)
       this->cache = tmp;
     }
     if (this->cache != tmp) {
+      char *cmd;
       char rule[256];
+      RULE R; 
       
       if (is_daemon(this->C) == TRUE) {
         logger(this->logger,   "%s was modified since last check", this->wfile);
@@ -142,7 +146,11 @@ __start_watcher(FIDO this)
       }
 
       snprintf(rule, 256, "MODIFIED: %s", this->wfile);
-      __run_command(this, new_rule(rule));
+      R   = new_rule(rule);
+      cmd = __build_command(this, R);
+      __run_command(this, cmd);
+      xfree(cmd);
+      R = rule_destroy(R);
       this->cache = tmp;
       __persist(this, put);
     }
@@ -173,14 +181,23 @@ __agecheck(FIDO this, char *dir)
     exit (EXIT_FAILURE);
   }
   while (TRUE) {
-    char rule[1024];
+    int  res = 0;
+    char *cmd;
+    char buf[1024];
+    RULE rule;
+
     if (! __is_directory(this->wfile)) {
       /**
        * We're watching a single file
        */
       if (__exceeds(this, this->wfile, sec) == TRUE) {
-        snprintf(rule, 256, "EXCEEDS: %s", this->wfile);
-        __run_command(this, new_rule(rule));
+        memset(buf, '\0', sizeof buf);
+        snprintf(buf, 256, "EXCEEDS: %s", this->wfile);
+        rule = new_rule(buf);
+        cmd  = __build_command(this, rule);
+        res  = __run_command(this, cmd);
+        rule = rule_destroy(rule);
+        xfree(cmd);
       }
     } else {
       /**
@@ -203,18 +220,24 @@ __agecheck(FIDO this, char *dir)
 
         len = snprintf(path, MAXPATH, "%s/%s", dir, name);
         if (len >= MAXPATH) {
-          fprintf (stderr, "Path length has become too long.\n");
+          logger(this->logger, "FATAL: the path (%s) is too long. Maximum path lenght is %d", path, MAXPATH);
+          VERBOSE(is_verbose(this->C), "FATAL: the path (%s) is too long. Maximum path lenght is %d", path, MAXPATH);
           exit (1);
         }
         if (__exceeds(this, path, sec) == TRUE) {
           if (is_daemon(this->C) == TRUE) {
-             logger(this->logger,   "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
-             VERBOSE(is_verbose(this->C), "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
-           } else {
-             VERBOSE(is_verbose(this->C), "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
-           }
-           snprintf(rule, 256, "EXCEEDS: %s", path);
-          __run_command(this, new_rule(rule));
+            logger(this->logger,   "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
+            VERBOSE(is_verbose(this->C), "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
+          } else {
+            VERBOSE(is_verbose(this->C), "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
+          }
+          memset(buf, '\0', sizeof buf);
+          snprintf(buf, 256, "EXCEEDS: %s", path);
+          rule = new_rule(buf);
+          cmd  = __build_command(this, rule);
+          res  = __run_command(this, cmd);
+          rule = rule_destroy(rule);
+          xfree(cmd); 
         }
         if ((this->recurse) && (entry->d_type & DT_DIR)) {
            __agecheck(this, path);
@@ -343,20 +366,35 @@ __ticks (FIDO this, long offset)
       if (line != NULL) {
         int x;
         for (x = 0; x < (int)array_length(this->rules); x++) {
+          char *cmd;
+          char *tmp;
           RSET rset;
-          RULE r = (RULE)array_get(this->rules, x);
+          RULE rule = (RULE)array_get(this->rules, x);
           // XXX: do we want a condition or a an arg to __eregi for the capture??
-          rset = __eregi(rule_get_pattern(r), line);
+          rset = __eregi(rule_get_pattern(rule), line);
           if (rset_get_result(rset) == TRUE) {
             int   ret;
             if (is_daemon(this->C) == TRUE) {
-              logger(this->logger,   "matched %s in %s", rule_get_pattern(r), this->wfile);
-              VERBOSE(is_verbose(this->C), "matched %s in %s", rule_get_pattern(r), this->wfile);
+              logger(this->logger,   "matched %s in %s", rule_get_pattern(rule), this->wfile);
+              VERBOSE(is_verbose(this->C), "matched %s in %s", rule_get_pattern(rule), this->wfile);
             } else {
               VERBOSE(is_verbose(this->C), "matched: %s in %s", line, this->wfile);
             }
-            ret  = __run_command(this, r);
+            tmp  = __build_command(this, rule);
+            cmd  = xmalloc(strlen(tmp)+rset_get_length(rset)+10);
+            memset(cmd, '\0', strlen(tmp)+rset_get_length(rset)+10);
+            strcpy(cmd, tmp);
+            while (strstr(cmd, "$")){
+              VERBOSE(is_verbose(this->C), "B CMD: %s", cmd);
+              cmd = __evaluate(rset_get_group(rset), cmd);
+              VERBOSE(is_verbose(this->C), "A CMD: %s", cmd);
+            }
+            VERBOSE(is_verbose(this->C), "TMP: %s", tmp);
+            VERBOSE(is_verbose(this->C), "CMD: %s", cmd);
+            ret  = __run_command(this, cmd);
             rset = rset_destroy(rset);
+            xfree(cmd);
+            xfree(tmp);
             if (ret < 0) {
               logger(this->logger, "ERROR: unable to run command: %s", this->action);
             }
@@ -452,7 +490,7 @@ __read_rules(FIDO this)
      // the rules file is actually a rule
      RULE  R = new_rule(this->rfile);
      if (R) {
-       array_push(this->rules, (RULE)R);
+       array_npush(this->rules, (RULE)R, RULESIZE);
        return TRUE;
      } else {
        return FALSE;
@@ -468,7 +506,7 @@ __read_rules(FIDO this)
       *lineptr++=0;
       R = new_rule(lineval);
       if (R) {
-        array_push(this->rules, (RULE)R);
+        array_npush(this->rules, (RULE)R, RULESIZE);
       }
       xfree(lineval);
     }
@@ -500,11 +538,33 @@ __seconds_since_90(char *file)
 }
 
 
+
+private char *
+__build_command(FIDO this, RULE rule) 
+{
+  char *cmd;
+
+  if (throttled(this->throttle)) {
+    return 0;
+  }
+
+  if (rule_get_property(rule) != NULL) {
+    cmd = xmalloc(strlen(this->action)+strlen(rule_get_property(rule))+5);
+    memset(cmd, '\0', strlen(this->action)+strlen(rule_get_property(rule))+5);
+    snprintf(
+      cmd, strlen(this->action)+strlen(rule_get_property(rule))+5, "%s %s", this->action, rule_get_property(rule)
+    );
+  } else {
+    cmd = xstrdup(this->action);
+  }
+
+  return cmd;
+}
+
 private int
-__run_command(FIDO this, RULE r) 
+__run_command(FIDO this, char *cmd) 
 {
   int   ret;
-  char *cmd;
   char  out[BUFSIZ];
   FILE *rp;
 
@@ -512,15 +572,6 @@ __run_command(FIDO this, RULE r)
     return 0;
   }
 
-  if (rule_get_property(r) != NULL) {
-    cmd = xmalloc(strlen(this->action)+strlen(rule_get_property(r))+5);
-    memset(cmd, '\0', strlen(this->action)+strlen(rule_get_property(r))+5);
-    snprintf(
-      cmd, strlen(this->action)+strlen(rule_get_property(r))+5, "%s %s", this->action, rule_get_property(r)
-    );
-  } else {
-    cmd = xstrdup(this->action);
-  }
   rp = popen(cmd, "r");
   while (fgets(out, sizeof out, rp) != NULL) {
     chomp(out);
@@ -536,7 +587,6 @@ __run_command(FIDO this, RULE r)
       NOTIFY(ERROR, "%s exited with non-zero result: %d", this->action, ret);
     }
   }
-  xfree(cmd);
   return ret;
 }
 
@@ -657,6 +707,65 @@ __is_directory(char *path)
   }
   return FALSE;
 }
+
+#define BUFSIZE 10240
+private char *
+__evaluate(ARRAY array, char *cmd)
+{
+  int   i   = 0;
+  int   len = 0;
+  char *res;
+  char *ptr;
+  char *end;
+  char  buf[BUFSIZE];
+  int   index = 0;
+  char *scan;
+
+
+  res = realloc(cmd, BUFSIZE+10);
+  if (res != NULL) {
+    cmd = res;
+  }
+
+  scan  = strchr(cmd, '$') + 1;
+  len   = (strlen(cmd) - strlen(scan))-1;
+  ptr   = (char*)scan;
+  index = atoi(ptr);
+
+  while (*ptr && isdigit(*ptr)) {
+    ptr++;
+  }
+  end  = strdup(ptr);
+
+  while (*scan && *scan != ' ' && *scan != '\n' && *scan != '\r') {
+    (*scan) = (*scan)+1;
+    i++;
+  }
+
+  if (scan[0] == ' ' || scan[0] == '\n' || scan[0] == '\r') {
+    scan++;
+  }
+
+  memset(buf, '\0', sizeof buf);
+  strncpy(buf, cmd, len);
+  if (ptr != NULL) {
+    /**
+     * The fido user counts from 1, whereas the array
+     * index starts at zero.
+     */
+    index = (index > 0) ? index - 1 : 0;
+    if (index < (int)array_length(array)) {
+      strcat(buf, array_get(array, index));
+      strcat(buf, " ");
+    }
+  }
+  strcat(buf, end);
+  memset(res, '\0', BUFSIZE * sizeof(char));
+  strncpy(res, buf, strlen(buf));
+  free(end);
+  return res;
+}
+
 
 private BOOLEAN
 __exceeds(FIDO this, char *path, int age) {
