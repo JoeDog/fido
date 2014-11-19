@@ -58,6 +58,11 @@ rule_get_property(RULE this)
 char *
 rule_get_pattern(RULE this)
 {
+
+  if (this == NULL || *this->pattern == '\0' || this->pattern == NULL) {
+    fprintf(stderr, "ERROR: pattern is null\n");
+    return NULL;
+  }
   return this->pattern;
 }
 
