@@ -2,6 +2,7 @@
 #define RSET_H
 
 #include <stdarg.h>
+#include <array.h>
 #include <joedog/joedog.h>
 #include <joedog/defs.h>
 #include <joedog/boolean.h>
@@ -12,6 +13,8 @@ RSET    new_rset();
 RSET    rset_destroy(RSET this);
 void    rset_set_result(RSET this, BOOLEAN result);
 BOOLEAN rset_get_result(RSET this);
+int     rset_get_length(RSET this);
+ARRAY   rset_get_group(RSET this);
 void    rset_add(RSET this, const char *fmt, ...);
 char *  rset_get_string(RSET this);
 

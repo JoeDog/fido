@@ -64,6 +64,24 @@ rset_add(RSET this, const char *fmt, ...)
   va_end(args);
 }
 
+ARRAY
+rset_get_group(RSET this)
+{
+  return this->group;
+}
+
+int 
+rset_get_length(RSET this) 
+{
+  int i;
+  int len = 0;
+
+  for (i = 0; i < (int)array_length(this->group); i++) {
+    len += strlen(array_get(this->group, i));
+  }
+  return len;
+}
+
 char *
 rset_get_string(RSET this) 
 {
@@ -76,13 +94,10 @@ rset_get_string(RSET this)
 
   if (this->string != NULL && strlen(this->string) > 0) return this->string;
 
-  for (i = 0; i < (int)array_length(this->group); i++) {
-    len += strlen(array_get(this->group, i))+1;
-  }
+  len = rset_get_length(this)+(int)array_length(this->group)+2;
 
   this->string = (char*)xmalloc(len);
   memset(this->string, '\0', len);
-
 
   for (i = 0; i < (int)array_length(this->group); i++) {
     if (i > 0)  strcat(this->string, " ");
