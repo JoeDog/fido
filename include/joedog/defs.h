@@ -5,6 +5,7 @@
 
 #include <ctype.h>
 
+#define  UNUSED(expr)   do { (void)(expr); } while (0)
 #define  ISUPPER(x)     (((unsigned)(x) >= 'A') && ((unsigned)(x) <= 'Z'))
 #define  ISLOWER(x)     (((unsigned)(x) >= 'a') && ((unsigned)(x) <= 'z'))
 #define  ISCOMMENT(x)   (x == '#')
