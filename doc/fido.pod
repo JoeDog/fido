@@ -90,10 +90,10 @@ in config file, it can be overridden with --log. $_PROGRAM reads config files
 in a priortized fashion. The ENV variable FIDORC is the highest. That is followed by 
 '-f /path/file' and by the system defaults:
 
-  /etc/fido/fido.conf
-  /etc/fido.conf
-  /usr/local/etc/fido.conf
-  /usr/local/etc/fido/fido.conf
+  /etc/$_PROGRAM/fido.conf
+  /etc/$_PROGRAM.conf
+  /usr/local/etc/$_PROGRAM.conf
+  /usr/local/etc/$_PROGRAM/$_PROGRAM.conf
 
 Here is an example that sets an ENV variable and invokes the program:
 

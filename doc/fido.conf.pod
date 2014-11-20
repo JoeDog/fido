@@ -93,6 +93,19 @@ time. If the file we're monitoring is a directory, then an alert will be trigger
 file in that directory exceeds the designated time. In the final example, it will trigger 
 an action each time it matches a pattern inside $rulesdir/haha.conf 
 
+Beginning with version 1.1.4, you can use parentheses to capture text and assign to 
+variables $1, $2, etc.  This is useful if you'd like to send matched text to your program, 
+for example:
+
+  /var/log/httpd/joedog-access_log {
+    rules  = ^([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*GoogleBot
+    action = /home/jeff/bin/googler $1
+  }
+
+In the file block above, the IP address is captured within parentheses and passed to the 
+action as variable $1
+
+
 =head2 action
 
 This is a FILES level directive that tells $_PROGRAM what to do in the event 
@@ -101,6 +114,12 @@ can specify a program with parameters:
 
   action = echo "action alert!!!!" | /usr/sbin/sendmail -v jeff@joedog.org
   action = /home/jeff/bin/haha
+  action = /usr/local/bin/myscript $1 $2
+
+Beginning with version 1.1.4, fido supports regex back references. Any text you 
+capture with a regex match within a set of parentheses can be sent to the action
+program in $1 $2 $3 etc.
+
 
 =head2 throttle
 
