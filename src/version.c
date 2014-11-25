@@ -9,7 +9,7 @@ const char *program_name   = "fido";
 const char *author_name    = "Jeffrey Fulmer, et al.";
 const char *email_address  = "jeff@joedog.org";
 const char *years          = "2000-2014";
-const char *copyright      = "Copyright (C) 2011-2013 by Jeffrey Fulmer, et al.\n\
+const char *copyright      = "Copyright (C) 2011-2014 by Jeffrey Fulmer, et al.\n\
 This is free software; see the source for copying conditions.\n\
 There is NO warranty; not even for MERCHANTABILITY or FITNESS\n\
 FOR A PARTICULAR PURPOSE.\n";
