@@ -3,7 +3,14 @@
 # Date:       Wed Dec 21 10:38:16 EST 2011
 # Version:    1.00
 
-2013/08/19 2013/12/04 Jeffrey Fulmer <http://www.joedog.org/support/>
+2014/11/22 Jeffrey Fulmer <http://www.joedog.org/support/>
+ * FIDO RELEASE            RELEASE_1-1-4_NOV-22-2014
+ * src/fido.c              Added regex capture and __evaluate()
+ * src/rset.c              Added to the distribution
+ * src/rset.h              Added to the distribution
+ * src/rule.c              Added a null check to rset_get_pattern
+
+2014/08/19 Jeffrey Fulmer <http://www.joedog.org/support/>
  * FIDO RELEASE            RELEASE_1-1-2_AUG-19-2014
  * src/fido.c              fixed args problem to the logger (yeah, ugh)
  * src/version.c           Version increment: 1.1.2
