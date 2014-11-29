@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/wait.h>
+#include <signal.h>
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -195,6 +196,53 @@ parse_cmdline(CONF C, int argc, char *argv[]) {
   return;
 } /* end of parse_cmdline */
 
+void 
+sighandler(int sig)
+{
+  LOG L = new_logger("syslog");
+
+  switch(sig) {
+    case SIGHUP:
+      logger(L, "Received SIGHUP signal; reloading config.");
+      conf_reload(C);
+      break;
+    case SIGINT:
+    case SIGTERM:
+      logger(L, "Daemon exiting");
+      exit(EXIT_SUCCESS);
+      break;
+    default:
+      logger(L, "Unhandled signal %s", strsignal(sig));
+      break;
+  }
+}
+
+void 
+sigmasker() 
+{
+  sigset_t sigset;
+  struct   sigaction action;
+         
+  if (getppid() == 1) {
+    return;
+  }
+ 
+  sigemptyset(&sigset);
+  sigaddset(&sigset, SIGCHLD); 
+  sigaddset(&sigset, SIGTSTP); 
+  sigaddset(&sigset, SIGTTOU);
+  sigaddset(&sigset, SIGTTIN); 
+  sigprocmask(SIG_BLOCK, &sigset, NULL); 
+
+  action.sa_handler = sighandler;
+  sigemptyset(&action.sa_mask);
+  action.sa_flags = 0;
+         
+  sigaction(SIGHUP, &action, NULL); 
+  sigaction(SIGTERM, &action, NULL);  
+  sigaction(SIGINT, &action, NULL); 
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -216,6 +264,7 @@ main(int argc, char *argv[])
   runner_destroy(R);
   
   if (is_daemon(C)) {
+    sigmasker();
     res = fork();
     if (res == -1 ){
       // ERRROR
@@ -235,7 +284,7 @@ main(int argc, char *argv[])
         FIDO F = new_fido(C, keys[i]);
         result = crew_add(crew, (void*)start, F);
         if (result == FALSE) {
-          NOTIFY(FATAL, "%s: [error] unable to spawn additional threads");
+          NOTIFY(FATAL, "%s: [error] unable to spawn additional threads", program_name);
         }
       }
       crew_join(crew, TRUE, &statusp);
