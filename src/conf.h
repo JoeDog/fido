@@ -14,6 +14,7 @@ typedef struct CONF_T *CONF;
 
 CONF     new_conf();
 void     conf_destroy(CONF this);
+void     conf_reload(CONF this);
 void     show(CONF this, BOOLEAN quit);
 BOOLEAN  parse_cfgfile(CONF this);
 
@@ -27,6 +28,7 @@ void     set_logfile(CONF this, char *logfile);
 void     set_pidfile(CONF this, char *pidfile);
 
 /* getters */
+int      conf_get_serial(CONF this);
 HASH     get_items (CONF this);
 BOOLEAN  is_daemon (CONF this);
 BOOLEAN  is_verbose(CONF this);

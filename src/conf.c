@@ -16,6 +16,7 @@ struct CONF_T
   BOOLEAN  verbose;
   BOOLEAN  debug;
   BOOLEAN  daemon;
+  int      serial; 
   char *   pidfile;
   char *   logfile;
   char *   cfgfile;
@@ -45,6 +46,7 @@ new_conf()
   CONF this;
   
   this = calloc(sizeof(struct CONF_T),1);
+  this->serial    = 1000;
   this->verbose   = FALSE;
   this->cfgfile   = NULL;
   this->rulesdir  = NULL;
@@ -59,6 +61,15 @@ new_conf()
   this->items = new_hash(4);
 
   return this;
+}
+
+void 
+conf_reload(CONF this) 
+{
+  hash_destroy(this->items);
+  this->items  = new_hash(4); 
+  parse_cfgfile(this);
+  this->serial = (this->serial+10);
 }
 
 void
@@ -136,6 +147,12 @@ show(CONF this, BOOLEAN quit)
   }
   if (quit) exit(0);
   return;
+}
+
+int 
+conf_get_serial(CONF this) 
+{
+  return this->serial;
 }
 
 char *
@@ -511,65 +528,4 @@ __file_exists(char *file)
   return FALSE;
 }
 
-
-#if 0
-private char *
-__chomp_line(FILE *fp, char **str, int *line_num)
-{
-  char *ptr;
-  while(TRUE){
-    if ((*str = __get_line(fp)) == NULL) return NULL;
-    (*line_num)++;
-    ptr = chomp(*str);
-    ptr = trim(ptr);
-    /* exclude comments */
-    if(*ptr != '#' && *ptr != '\0'){
-      return ptr;
-    } else {
-      xfree(ptr);
-    }
-  }
-}
-
-private char *
-__get_line(FILE *fp) {
-  char *ptr = NULL;
-  char *newline;
-  char tmp[256];
-
-  memset(tmp, '\0', sizeof(tmp));
-  do {
-    if((fgets(tmp, sizeof(tmp), fp)) == NULL) return(NULL);
-    if(ptr == NULL){
-      ptr = xstrdup(tmp);
-    } else {
-      ptr = (char*)xrealloc(ptr, strlen(ptr) + strlen(tmp) + 1);
-      strcat(ptr, tmp);
-    }
-    newline = strchr(ptr, '\n');
-  } while(newline == NULL);
-  *newline = '\0';
-
-  return ptr;
-}
-
-private int  
-__file_size(char *file)
-{
-  int  fd;
-  int  len;
-
-  /* open the file read only  */
-  if ((fd = open(file, O_RDONLY)) < 0) {
-    /* the file does NOT exist  */
-    close(fd);
-    return -1;
-  } else {
-    len = lseek(fd, 0, SEEK_END);
-    close(fd);
-    return len;
-  }
-  return -1;
-}
-#endif
 
