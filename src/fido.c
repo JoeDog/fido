@@ -30,6 +30,7 @@
 
 struct FIDO_T
 {
+  int       serial;
   char      *wfile;
   char      *rfile;
   char      *action;
@@ -109,6 +110,39 @@ fido_destroy(FIDO this) {
   return NULL;
 }
 
+void
+fido_reload(FIDO this) 
+{
+  logger(this->logger, "reloading config....");
+  if (this->rfile != NULL && strlen(this->rfile) > 0) {
+    logger(this->logger, "RULES: old value: %s", this->rfile);
+    xfree(this->rfile);
+    this->rfile = xstrdup(conf_get_rules(this->C, this->wfile));
+    logger(this->logger, "RULES: new value: %s", this->rfile);
+  }
+  if (this->action != NULL && strlen(this->action) > 0) {
+    logger(this->logger, "ACTION: old value: %s", this->action);
+    xfree(this->action);
+    this->action = xstrdup(conf_get_action(this->C, this->wfile));
+    logger(this->logger, "ACTION: new value: %s", this->action);
+  }
+  if (this->exclude != NULL && strlen(this->exclude) > 0) {
+    logger(this->logger, "EXCLUDE: old value: %s", this->exclude);
+    xfree(this->exclude);
+    this->exclude = xstrdup(conf_get_exclude(this->C, this->wfile));
+    logger(this->logger, "EXCLUDE: new value: %s", this->exclude);
+  }
+  logger(this->logger, "RECURSE: old value: %s", (this->recurse==TRUE)?"true":"false");
+  this->recurse  = conf_get_recurse(this->C, this->wfile);
+  logger(this->logger, "RECURSE: old value: %s", (this->recurse==TRUE)?"true":"false");
+  logger(this->logger, "THROTTLE: old value: %s", throttle_to_string(this->throttle));
+  this->throttle = throttle_destroy(this->throttle);
+  this->throttle = new_throttle(this->wfile, __parse_time(conf_get_throttle(this->C, this->wfile))); 
+  logger(this->logger, "THROTTLE: new value: %s", throttle_to_string(this->throttle));
+  this->serial   = conf_get_serial(this->C);
+  logger(this->logger, "configuration number %d is now loaded", this->serial);
+}
+
 BOOLEAN 
 start(FIDO this)
 {
@@ -155,6 +189,9 @@ __start_watcher(FIDO this)
       __persist(this, put);
     }
     sleep(1);
+    if (this->serial != conf_get_serial(this->C)) {
+      fido_reload(this);
+    }
   }  
   return TRUE;
 }
@@ -164,11 +201,18 @@ __start_agecheck(FIDO this)
 {
   while (TRUE) {
     __agecheck(this, this->wfile);
+    if (this->serial != conf_get_serial(this->C)) {
+      fido_reload(this);
+    }
     sleep(1);
   }
   return TRUE;
 }
 
+/**
+ * NOTE: The serial check for fido_reload is in an
+ *       endless loop inside __start_agecheck
+ */
 private BOOLEAN
 __agecheck(FIDO this, char *dir)
 {
@@ -180,7 +224,7 @@ __agecheck(FIDO this, char *dir)
     fprintf (stderr, "Cannot open directory '%s'\n", dir);
     exit (EXIT_FAILURE);
   }
-  while (TRUE) {
+  while (TRUE) { 
     int  res = 0;
     char *cmd;
     char buf[1024];
@@ -198,6 +242,9 @@ __agecheck(FIDO this, char *dir)
         res  = __run_command(this, cmd);
         rule = rule_destroy(rule);
         xfree(cmd);
+        if (res != 0) {
+          VERBOSE(is_verbose(this->C), "ERROR: our command failed: %s", cmd);
+        }
       }
     } else {
       /**
@@ -271,6 +318,9 @@ __start_parser(FIDO this)
         } else {
           logger(this->logger, "%s [error] set return to -7; offset value: %ld", program_name, offset);
           rc = -7;
+        }
+        if (this->serial != conf_get_serial(this->C)) {
+          fido_reload(this);
         }
       }
     } else {
