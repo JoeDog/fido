@@ -12,6 +12,6 @@ THROTTLE   throttle_destroy(THROTTLE this);
 BOOLEAN    throttled(THROTTLE this);
 int        throttle_seconds(THROTTLE this);
 char *     throttle_filename(THROTTLE this);
+char *     throttle_to_string(THROTTLE this);
 
-#endif/*__THROTTLE_H*/
-
+#endif/*__THROTTLE_H*/ 

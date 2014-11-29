@@ -14,6 +14,7 @@
 struct THROTTLE_T
 {
   char * file;
+  char * time;
   int    seconds;
 };
 
@@ -38,6 +39,7 @@ THROTTLE
 throttle_destroy(THROTTLE this)
 {
   xfree(this->file);
+  xfree(this->time);
   xfree(this);
   this = NULL;
   return this;
@@ -80,6 +82,26 @@ int
 throttle_seconds(THROTTLE this)
 {
   return this->seconds;
+}
+
+char *
+throttle_to_string(THROTTLE this) 
+{
+  long hour, min, sec, t;
+
+  if (this->time != NULL && strlen(this->time) > 0) {
+    xfree(this->time);
+  }
+
+  hour = (this->seconds/3600);
+  t    = (this->seconds%3600);
+  min  = (t/60);
+  sec  = t%60;
+
+  this->time  = (char*)malloc(32); 
+  memset(this->time, '\0', 32); 
+  snprintf(this->time, 32, "%ld:%ld:%ld", hour, min, sec);
+  return this->time;
 }
 
 char *
