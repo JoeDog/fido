@@ -214,8 +214,8 @@ __hash_get(HASH this, const char *fmt, va_list ap)
   if (key != NULL) {
     x = __genkey(this->size, key);
     for (node = this->table[x]; node != NULL; node = node->next) {
-      if (!strcmp( node->key, key)) {
-        return(node->value);
+      if (!strcmp(node->key, key)) {
+        return (node->value);
       }
     }
   }

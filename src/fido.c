@@ -113,32 +113,40 @@ fido_destroy(FIDO this) {
 void
 fido_reload(FIDO this) 
 {
+  char *rules;
   logger(this->logger, "reloading config....");
   if (this->rfile != NULL && strlen(this->rfile) > 0) {
     logger(this->logger, "RULES: old value: %s", this->rfile);
     xfree(this->rfile);
-    this->rfile = xstrdup(conf_get_rules(this->C, this->wfile));
-    logger(this->logger, "RULES: new value: %s", this->rfile);
   }
+  rules = conf_get_rules(this->C, this->wfile);
+  this->rfile = xstrdup(rules);
+  logger(this->logger, "RULES: new value: %s", this->rfile);
+  xfree(rules);
+
   if (this->action != NULL && strlen(this->action) > 0) {
     logger(this->logger, "ACTION: old value: %s", this->action);
     xfree(this->action);
-    this->action = xstrdup(conf_get_action(this->C, this->wfile));
-    logger(this->logger, "ACTION: new value: %s", this->action);
   }
+  this->action = xstrdup(conf_get_action(this->C, this->wfile));
+  logger(this->logger, "ACTION: new value: %s", this->action);
+
   if (this->exclude != NULL && strlen(this->exclude) > 0) {
     logger(this->logger, "EXCLUDE: old value: %s", this->exclude);
     xfree(this->exclude);
-    this->exclude = xstrdup(conf_get_exclude(this->C, this->wfile));
-    logger(this->logger, "EXCLUDE: new value: %s", this->exclude);
   }
+  this->exclude = xstrdup(conf_get_exclude(this->C, this->wfile));
+  logger(this->logger, "EXCLUDE: new value: %s", this->exclude);
+
   logger(this->logger, "RECURSE: old value: %s", (this->recurse==TRUE)?"true":"false");
   this->recurse  = conf_get_recurse(this->C, this->wfile);
   logger(this->logger, "RECURSE: old value: %s", (this->recurse==TRUE)?"true":"false");
+
   logger(this->logger, "THROTTLE: old value: %s", throttle_to_string(this->throttle));
   this->throttle = throttle_destroy(this->throttle);
   this->throttle = new_throttle(this->wfile, __parse_time(conf_get_throttle(this->C, this->wfile))); 
   logger(this->logger, "THROTTLE: new value: %s", throttle_to_string(this->throttle));
+
   this->serial   = conf_get_serial(this->C);
   logger(this->logger, "configuration number %d is now loaded", this->serial);
 }
@@ -146,7 +154,7 @@ fido_reload(FIDO this)
 BOOLEAN 
 start(FIDO this)
 {
-  VERBOSE(is_verbose(this->C), "Starting fido[id=%u] ...", pthread_self());
+  VERBOSE(is_verbose(this->C), "Starting fido[pid=%d, id=%u]", getpid(), pthread_self());
   if (strmatch(this->rfile, "modified")) {
     return __start_watcher(this);
   } else if (! strncmp(this->rfile, "exceeds", 7)) {

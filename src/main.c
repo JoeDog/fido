@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <errno.h>
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -208,7 +209,9 @@ sighandler(int sig)
       break;
     case SIGINT:
     case SIGTERM:
-      logger(L, "Daemon exiting");
+      errno = 0;
+      logger(L, "Shutting down [TERM].");
+      VERBOSE(is_verbose(C), "Stopping %s[pid=%d]", program_name, getpid());
       exit(EXIT_SUCCESS);
       break;
     default:
@@ -262,9 +265,9 @@ main(int argc, char *argv[])
   RUNNER R = new_runner(conf_get_user(C), conf_get_group(C));
   runas(R);
   runner_destroy(R);
+  sigmasker();
   
   if (is_daemon(C)) {
-    sigmasker();
     res = fork();
     if (res == -1 ){
       // ERRROR

@@ -314,6 +314,9 @@ parse_cfgfile(CONF this)
     while (*line)
       line++;
     if ((sb = strchr(tmp, '{')) != NULL) {        // start bracket
+      if (section != NULL && strlen(section) > 0) {
+        xfree(section);
+      }
       section = xstrdup(option);
       hash_put(this->items, section, section);
       in = TRUE;
@@ -350,26 +353,41 @@ parse_cfgfile(CONF this)
         }
         if (strmatch(option, "rulesdir")) {
           if (value && *value) {
+            if (this->rulesdir != NULL && strlen(this->rulesdir) > 0) {
+              xfree(this->rulesdir);
+            }
             this->rulesdir = xstrdup(value);
           }
         }
         if (strmatch(option, "log")) {
           if (value && *value) {
+            if (this->logfile != NULL && strlen(this->logfile) > 0) {
+              xfree(this->logfile);
+            }
             this->logfile = xstrdup(value);
           }
         }
         if (strmatch(option, "pid")) {
           if (value && *value) {
+            if (this->pidfile != NULL && strlen(this->pidfile) > 0) {
+              xfree(this->pidfile);
+            }
             this->pidfile = xstrdup(value);
           }
         }
         if (strmatch(option, "user")) {
           if (value && *value) {
+            if (this->user != NULL && strlen(this->user) > 0) {
+              xfree(this->user);
+            }
             this->user = xstrdup(value);
           }
         }
         if (strmatch(option, "group")) {
           if (value && *value) {
+            if (this->group != NULL && strlen(this->group) > 0) {
+              xfree(this->group);
+            }
             this->group = xstrdup(value);
           }
         }
@@ -377,7 +395,7 @@ parse_cfgfile(CONF this)
     }
     xfree(value);
     xfree(option);
-    free(tmp);
+    xfree(tmp);
   } /* end of while chomp_line */
   fclose(fp);
 
@@ -411,6 +429,9 @@ is_verbose(CONF this)
 void
 set_cfgfile(CONF this, char *file)
 {
+  if (this->cfgfile != NULL && strlen(this->cfgfile) > 0) {
+    xfree(this->cfgfile);
+  }
   this->cfgfile = xstrdup(file);
   return;
 }
@@ -515,9 +536,9 @@ __file_exists(char *file)
   int  fd;
 
   /* open the file read only  */
-  if((fd = open(file, O_RDONLY)) < 0){
+  if ((fd = open(file, O_RDONLY)) < 0){
     /* the file does NOT exist  */
-    close(fd);
+    //close(fd);
     return FALSE;
   } else {
     /* party on Garth... */

@@ -3,6 +3,11 @@
 # Date:       Wed Dec 21 10:38:16 EST 2011
 # Version:    1.00
 
+2014/11/29 Jeffrey Fulmer <http://www.joedog.org/support/>
+ * src/conf.c              Added conf_get_serial to identify current config
+ * src/throttle.c          Added throttle_to_string which displays H:M:S
+ * src/main.c              Added signal handling 
+
 2014/11/22 Jeffrey Fulmer <http://www.joedog.org/support/>
  * FIDO RELEASE            RELEASE_1-1-4_NOV-22-2014
  * src/fido.c              Added regex capture and __evaluate()
