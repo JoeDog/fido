@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <fcntl.h>
 #include <hash.h>
 #include <conf.h>
@@ -13,18 +14,19 @@
 
 struct CONF_T
 {
-  BOOLEAN  verbose;
-  BOOLEAN  debug;
-  BOOLEAN  daemon;
-  int      serial; 
-  char *   pidfile;
-  char *   logfile;
-  char *   cfgfile;
-  char *   rulesdir;
-  char *   user;
-  char *   group;
-  BOOLEAN  capture;
-  HASH     items;
+  BOOLEAN         verbose;
+  BOOLEAN         debug;
+  BOOLEAN         daemon;
+  int             serial; 
+  char *          pidfile;
+  char *          logfile;
+  char *          cfgfile;
+  char *          rulesdir;
+  char *          user;
+  char *          group;
+  BOOLEAN         capture;
+  HASH            items;
+  pthread_mutex_t lock;
 };
 
 /* XXX: hardcode alert!!! */
@@ -59,21 +61,33 @@ new_conf()
   __set_cfgfile(this);
   __set_rulesdir(this);
   this->items = new_hash(4);
-
+  if (pthread_mutex_init(&this->lock, NULL) != 0) {
+    this->serial = -1; // disable conf_reload
+  } 
   return this;
 }
 
 void 
 conf_reload(CONF this) 
 {
+  if (this->serial < 1000) {
+    SYSLOG(ERROR, "configuration reload is disabled; you'll have to restart the daemon");
+    NOTIFY(ERROR, "configuration reload is disabled; you'll have to restart the daemon");
+    VERBOSE(this->verbose, "Configuration reload is disabled; you'll have to restart the daemon");
+    return;
+  }
+  pthread_mutex_lock(&this->lock);
   hash_destroy(this->items);
   this->items  = new_hash(4); 
   parse_cfgfile(this);
   this->serial = (this->serial+10);
+  pthread_sleep_np(1);
+  pthread_mutex_unlock(&this->lock);
 }
 
 void
 conf_destroy(CONF this) {
+  pthread_mutex_destroy(&this->lock);
   //XXX: loop through this->items and destroy each item
   hash_destroy(this->items);
   xfree(this->user);
@@ -314,9 +328,6 @@ parse_cfgfile(CONF this)
     while (*line)
       line++;
     if ((sb = strchr(tmp, '{')) != NULL) {        // start bracket
-      if (section != NULL && strlen(section) > 0) {
-        xfree(section);
-      }
       section = xstrdup(option);
       hash_put(this->items, section, section);
       in = TRUE;
