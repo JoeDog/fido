@@ -216,7 +216,6 @@ sighandler(int sig)
       exit(EXIT_SUCCESS);
       break;
     default:
-      logger(L, "Unhandled signal %s", strsignal(sig));
       break;
   }
 }
