@@ -4,7 +4,7 @@
  * used by configure to dynamically assign those values 
  * to documentation files.
  */
-const char *version_string = "1.1.5";
+const char *version_string = "1.1.6";
 const char *program_name   = "fido";
 const char *author_name    = "Jeffrey Fulmer, et al.";
 const char *email_address  = "jeff@joedog.org";
