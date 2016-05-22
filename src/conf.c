@@ -7,10 +7,11 @@
 #include <hash.h>
 #include <conf.h>
 #include <version.h>
+#include <memory.h>
+#include <notify.h>
 #include <util.h>
-#include <joedog/boolean.h>
-#include <joedog/joedog.h>
 #include <joedog/defs.h>
+#include <joedog/boolean.h>
 
 struct CONF_T
 {

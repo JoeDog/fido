@@ -6,7 +6,6 @@
 #include <string.h>
 #include <hash.h>
 
-#include <joedog/joedog.h>
 #include <joedog/defs.h>
 #include <joedog/boolean.h>
 

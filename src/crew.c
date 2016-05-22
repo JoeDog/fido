@@ -1,7 +1,7 @@
 /**
  * Thread Pool 
  *
- * Copyright (C) 2005-2011 by
+ * Copyright (C) 2005-2016 by
  * Jeffrey Fulmer - <jeff@joedog.org>, et al. 
  *
  * This program is free software; you can redistribute it and/or modify
@@ -19,13 +19,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-
+#include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/time.h>
 #include <pthread.h>
 #include <crew.h>
-#include <joedog/joedog.h>
+#include <memory.h>
+#include <notify.h>
 #include <joedog/defs.h>
 #include <joedog/boolean.h>
 

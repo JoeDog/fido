@@ -23,6 +23,7 @@
 #define HASH_H
 
 #include <stdio.h>
+#include <stdarg.h>
 #if defined (__FreeBSD__)
 # include <unistd.h>
 #endif

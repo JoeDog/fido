@@ -1,6 +1,8 @@
+#include <stdio.h>
 #include <rset.h>
 #include <array.h>
 #include <string.h>
+#include <memory.h>
 #include <stdlib.h>
 
 struct RSET_T

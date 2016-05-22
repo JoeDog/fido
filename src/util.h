@@ -27,16 +27,17 @@
 #include <stdio.h>
 #include <joedog/boolean.h>
 
-void    parse_time(char *p);
-void    pthread_sleep_np(unsigned int seconds); 
-void    pthread_usleep_np(unsigned long usec); 
-int     pthread_rand_np(unsigned int *ctx); 
-char *  chomp_line(FILE *fp, char **str, int *line_num);
-char *  get_line(FILE *fp);
-BOOLEAN strmatch(char *str1, char *str2);
-void    debug(const char *fmt, ...);
-char    *uppercase(char *s, size_t len);
-char    *lowercase(char *s, size_t len);
+void     parse_time(char *p);
+void     pthread_sleep_np(unsigned int seconds); 
+void     pthread_usleep_np(unsigned long usec); 
+int      pthread_rand_np(unsigned int *ctx); 
+char *   chomp_line(FILE *fp, char **str, int *line_num);
+char *   get_line(FILE *fp);
+BOOLEAN  strmatch(char *str1, char *str2);
+char *   substring(char *str, int start, int len);
+void     debug(const char *fmt, ...);
+char *   uppercase(char *s, size_t len);
+char *   lowercase(char *s, size_t len);
 
 #endif /*UTIL_H*/
 

@@ -5,9 +5,9 @@
 #include <fcntl.h>
 #include <time.h>
 #include <throttle.h>
+#include <memory.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <joedog/joedog.h>
 #include <joedog/boolean.h>
 #include <joedog/defs.h>
 

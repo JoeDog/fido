@@ -2,7 +2,8 @@
 #include <util.h>
 #include <regex.h>
 #include <string.h>
-#include <joedog/joedog.h>
+#include <memory.h>
+#include <perl.h>
 #include <joedog/boolean.h>
 #include <joedog/defs.h>
 

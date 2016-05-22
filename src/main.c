@@ -1,7 +1,7 @@
 /**
  * Fido - a log file watcher
  *
- * Copyright (C) 2011-2014 by  
+ * Copyright (C) 2011-2016 by  
  * Jeffrey Fulmer - <jeff@joedog.org>, et al. 
  * This file is distributed as part of Fido
  *
@@ -58,7 +58,6 @@ char *strchr (), *strrchr ();
 
 #include <joedog/defs.h>
 #include <joedog/boolean.h>
-#include <joedog/joedog.h>
 
 #include <crew.h>
 #include <hash.h>
@@ -69,6 +68,7 @@ char *strchr (), *strrchr ();
 #include <util.h>
 #include <runner.h>
 #include <setup.h>
+#include <notify.h>
 
 /**
  * long options, std options struct

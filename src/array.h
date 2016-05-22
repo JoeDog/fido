@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2006-2014 by
  * Jeffrey Fulmer - <jeff@joedog.org>, et al.
- * This file is distributed as part of Fido
+ * This file is distributed as part of Siege
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #define ARRAY_H
 
 #include <stdlib.h>
+#include <joedog/defs.h>
 
 /**
  * ARRAY object
@@ -33,9 +34,13 @@ extern  size_t ARRAYSIZE;
 
 ARRAY  new_array();
 ARRAY  array_destroy(ARRAY this);
+ARRAY  array_destroyer(ARRAY this, method m);
+void   array_set_destroyer(ARRAY this, method m);
 void   array_push(ARRAY this, void *thing);
 void   array_npush(ARRAY this, void *thing, size_t len);
 void * array_get(ARRAY this, int index);
+void * array_remove (ARRAY this, int index);
+void * array_pop(ARRAY this);
 void * array_next(ARRAY this);
 void * array_prev(ARRAY this);
 size_t array_length(ARRAY this);

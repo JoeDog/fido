@@ -4,7 +4,6 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <joedog/joedog.h>
 
 struct PID_T {
   int    pid;

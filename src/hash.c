@@ -1,7 +1,7 @@
 /**
  * Hash Table
  *
- * Copyright (C) 2003-2013 by
+ * Copyright (C) 2003-2016 by
  * Jeffrey Fulmer - <jeff@joedog.org>, et al. 
  *
  * This program is free software; you can redistribute it and/or modify
@@ -27,7 +27,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <hash.h>
-#include <joedog/joedog.h>
 #include <joedog/defs.h>
 
 typedef struct NODE

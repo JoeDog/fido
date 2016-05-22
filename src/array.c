@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2006-2014 by
  * Jeffrey Fulmer - <jeff@joedog.org>, et al.
- * This file is distributed as part of Fido
+ * This file is distributed as part of Siege
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,28 +25,30 @@
 #include <string.h>
 #include <limits.h>
 #include <array.h>
-#include <joedog/joedog.h>
-
-#include <util.h>
+#include <memory.h>
+#include <setup.h>
 
 typedef void *array;
 
 struct ARRAY_T
 {
-  int    index;
-  int    length;
-  array  *data;
+  int     index;
+  int     length;
+  array * data;
+  method  free;
 };
 
 size_t ARRAYSIZE = sizeof(struct ARRAY_T);
 
 ARRAY
-new_array(){
+new_array()
+{
   ARRAY this;
 
   this = xcalloc(sizeof(struct ARRAY_T), 1);
   this->index  = -1;
   this->length =  0;
+  this->free   = NULL;
   return this;
 }
 
@@ -54,15 +56,35 @@ ARRAY
 array_destroy(ARRAY this) 
 {
   int i;
+  
+  if (this == NULL) return NULL;
+  
+  if (this->free == NULL) {
+    this->free = free;
+  }
 
   for (i = 0; i < this->length; i++) {
-    xfree(this->data[i]);  
+    this->free(this->data[i]);  
   } 
   xfree(this->data);
   xfree(this);
   this = NULL;
   return this; 
 }
+
+ARRAY
+array_destroyer(ARRAY this, method m)
+{
+  this->free = m;
+  return array_destroy(this);
+}
+
+void
+array_set_destroyer(ARRAY this, method m)
+{
+  this->free = m;
+}
+
 
 void 
 array_push(ARRAY this, void *thing)
@@ -81,7 +103,7 @@ array_npush(ARRAY this, void *thing, size_t len)
 {
   array arr;
   if (thing==NULL) return;
-  if (this->length == 0) {
+  if (this->data == NULL && this->length == 0) {
     this->data = xmalloc(sizeof(array));
   } else {
     this->data = realloc(this->data,(this->length+1)*sizeof(array)); 
@@ -100,6 +122,30 @@ array_get(ARRAY this, int index)
   if (index > this->length) return NULL;
 
   return this->data[index];
+}
+
+void *
+array_remove (ARRAY this, int index) {
+  int   length = 0;
+  array arr;
+
+  if (index > this->length) return NULL;
+
+  arr    = this->data[index];
+  length = --this->length;
+
+  for (; index < length; index++) {
+    this->data[index] = this->data[index+1];
+  }
+
+  return arr;
+}
+
+void *
+array_pop(ARRAY this) 
+{
+  if (this == NULL) return NULL;
+  return this->length ? this->data[--this->length] : NULL; 
 }
 
 void *
@@ -125,20 +171,22 @@ array_length(ARRAY this)
 char *
 array_to_string(ARRAY this)
 {
-  int  i;
-  int  len = 0;
-  char *str;
+  size_t i;
+  int    len = 0;
+  char  *str;
 
-  for (i = 0; i < (int)array_length(this); i++) {
+  if (this->length == 0) return "NULL";
+
+  for (i = 0; i < array_length(this); i++) {
     len += strlen(array_get(this, i))+3;
   }
   str = (char*)malloc(len+1);
   memset(str, '\0', len+1);
 
-  for (i = 0; i < (int)array_length(this); i++) {
+  for (i = 0; i < array_length(this); i++) {
     strcat(str, "[");
     strcat(str, array_get(this, i));
-    if (i == (int)array_length(this) - 1) {
+    if (i == array_length(this) - 1) {
       strcat(str, "]");
     } else {
       strcat(str, "],");
@@ -146,4 +194,42 @@ array_to_string(ARRAY this)
   }
   return str;
 }
+
+void
+array_print(ARRAY this)
+{
+  printf("%s\n", array_to_string(this));
+}
+
+
+#if 0
+#include <unistd.h>
+int
+main (int argc, char *argv[])
+{
+  int   x;
+  int   i;
+  int   len;
+  ARRAY A = new_array();
+  void *v; 
+for (i = 0; i < 1000000; i++) {
+  array_push(A, "Zero");
+  array_push(A, "One");
+  array_push(A, "Two");
+  array_push(A, "Three");
+  array_push(A, "Four");
+  array_push(A, "Five");
+  array_push(A, "Six-six-six");
+
+  while ((v = array_pop(A)) != NULL) {
+    printf("popped: %s\n", (char*)v);
+    xfree(v);
+  } 
+
+}
+  A = array_destroy(A);
+  return 0;
+}
+#endif
+
 

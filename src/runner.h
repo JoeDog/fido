@@ -1,7 +1,6 @@
 #ifndef __RUNNER_H
 #define __RUNNER_H
 
-#include <joedog/joedog.h>
 #include <joedog/defs.h>
 #include <joedog/boolean.h>
 

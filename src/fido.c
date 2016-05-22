@@ -8,6 +8,9 @@
 #include <fido.h>
 #include <throttle.h>
 #include <logger.h>
+#include <memory.h>
+#include <notify.h>
+#include <perl.h>
 #include <rset.h>
 #include <rule.h>
 #include <base16.h>
