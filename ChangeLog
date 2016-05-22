@@ -3,6 +3,15 @@
 # Date:       Wed Dec 21 10:38:16 EST 2011
 # Version:    1.00
 
+2016/05/22 Jeffrey Fulmer <http://www.joedog.org/support/>
+ * FIDO RELEASE           RELEASE_1-1-6_MAY-22-2016
+ * lib/*                  Moved to src and deleted
+ * acinclude.m4           Updated to newer version
+ * Makefile.am            Moved . to back of directory list
+ * src/memory.*           Moved from lib to src
+ * src/notify.*           Moved from lib to src
+ * src/perl.*             Moved from lib to src
+
 2014/11/29 Jeffrey Fulmer <http://www.joedog.org/support/>
  * FIDO RELEASE            RELEASE_1-1-5_DEC-04-2014
  * src/conf.c              Added conf_get_serial to identify current config
