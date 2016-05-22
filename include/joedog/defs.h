@@ -22,6 +22,8 @@
 # define TOUPPER(Ch) (ISLOWER (Ch) ? toupper (Ch) : (Ch))
 #endif
 
+typedef void (*method)(void *v);
+
 #ifndef  EXIT_SUCCESS
 # define EXIT_SUCCESS   0
 #endif /*EXIT_SUCESS*/
