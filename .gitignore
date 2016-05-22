@@ -1,0 +1,26 @@
+# Autotools Related
+PLATFORM
+aclocal.m4
+autom4te.cache/
+*Makefile.in
+config.status
+config.log
+include/config.h
+include/config.h.in
+include/joedog/joepath.h
+include/stamp-h1
+libtool
+
+# Compile Related
+*.o
+*.lo
+*Makefile
+configure
+src/siege
+
+# Generated
+doc/fido.1
+doc/fido.conf.5
+
+# Others
+tags
