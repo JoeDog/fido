@@ -266,7 +266,7 @@ AC_OUTPUT_COMMANDS([
   done
 ], [ VERSION="$VERSION" DATE="$DATE" PROGRAM="$PROGRAM" AUTHOR="$AUTHOR" EMAIL="$EMAIL" YEARS="$YEARS"])
 
-AC_OUTPUT(Makefile include/Makefile include/joedog/Makefile lib/Makefile lib/joedog/Makefile src/Makefile doc/Makefile utils/Makefile)
+AC_OUTPUT(Makefile include/Makefile include/joedog/Makefile src/Makefile doc/Makefile utils/Makefile)
 
 echo
 echo "--------------------------------------------------------"
