@@ -8,8 +8,9 @@
 #include <conf.h>
 #include <version.h>
 #include <util.h>
+#include <notify.h>
+#include <memory.h>
 #include <joedog/boolean.h>
-#include <joedog/joedog.h>
 #include <joedog/defs.h>
 
 struct CONF_T
@@ -132,6 +133,8 @@ show(CONF this, BOOLEAN quit)
         printf("     rules:  if modified\n");
       } else if (! strncmp(tmp, "exceeds", 7)) {
         printf("     rules:  %s\n", tmp);
+      } else if (! strncmp(tmp, "count", 7)) {
+        printf("     rules:  %s\n", tmp);
       } else if (strmatch(tmp, "recurse")) {
         printf("     rules:  %s\n", tmp);
       } else {
@@ -149,6 +152,10 @@ show(CONF this, BOOLEAN quit)
     tmp = hash_get(this->items, "%s:recurse", keys[x]);
     if (tmp) {
       printf("   recurse:  %s\n", tmp);
+    }
+    tmp = hash_get(this->items, "%s:interval", keys[x]);
+    if (tmp) {
+      printf("   interval: %s\n", tmp);
     }
     tmp = hash_get(this->items, "%s:user", keys[x]);
     if (tmp) {
@@ -197,6 +204,8 @@ conf_get_rules(CONF this, char *key)
       snprintf(ret, 1024, "%s", tmp);
     } else if (! strncmp(tmp, "exceeds", 7)) {
       snprintf(ret, 1024, "%s", tmp);
+    } else if (! strncmp(tmp, "count", 5)) {
+      snprintf(ret, 1024, "%s", tmp);
     } else {
       snprintf(fn, 1024, "%s/%s", this->rulesdir, tmp);
       if (__file_exists(fn)) {
@@ -226,6 +235,12 @@ conf_get_recurse(CONF this, char *key) {
   char *str = hash_get(this->items, "%s:recurse", key);
   if (str == NULL) return FALSE;
   return strmatch(str, "true");
+}
+
+char *
+conf_get_interval(CONF this, char *key)
+{
+  return hash_get(this->items, "%s:interval", key);
 }
 
 char * 
