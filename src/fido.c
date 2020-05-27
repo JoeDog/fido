@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <time.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -10,6 +11,9 @@
 #include <logger.h>
 #include <rset.h>
 #include <rule.h>
+#include <perl.h>
+#include <notify.h>
+#include <memory.h>
 #include <base16.h>
 #include <util.h>
 #include <pthread.h>
@@ -28,12 +32,20 @@
 #define LINESIZE 128
 #define MAXPATH  4096
 
+#define GREATERTHAN 1000
+#define EQUALTO     1001
+#define LESSTHAN    1002
+
+#define EXCEEDS     2000
+#define INTERVAL    2001
+
 struct FIDO_T
 {
   int       serial;
   char      *wfile;
   char      *rfile;
   char      *action;
+  int       interval;
   char      *exclude;
   BOOLEAN   recurse;
   long      cache;
@@ -58,6 +70,9 @@ private BOOLEAN  __start_parser(FIDO this);
 private BOOLEAN  __start_watcher(FIDO this);
 private BOOLEAN  __start_agecheck(FIDO this);
 private BOOLEAN  __agecheck(FIDO this, char *dir);
+private BOOLEAN  __start_countcheck(FIDO this);
+private BOOLEAN  __countcheck(FIDO this, char *dir);
+private int      __countfiles(char *path, BOOLEAN recursive); 
 private BOOLEAN  __is_readable (FIDO this);
 private long     __ticks (FIDO this, long offset);
 private long     __get_offset (FIDO this);
@@ -69,7 +84,8 @@ private BOOLEAN  __read_rules(FIDO this);
 private long     __seconds_since_90(char *file);
 private int      __run_command(FIDO this, char *cmd);
 private char *   __build_command(FIDO this, RULE rule);
-private int      __parse_time(char *p);
+private int      __parse_time(int mod, char *p);
+private int      __parse_count(char *p, int *op);
 private BOOLEAN  __exceeds(FIDO this, char *path, int age); 
 private char *   __evaluate(ARRAY array, char *cmd);
 private void     __persist(FIDO this, action a);
@@ -87,7 +103,10 @@ new_fido(CONF C, const char *file)
   this->action   = xstrdup(conf_get_action(this->C, this->wfile));
   this->exclude  = xstrdup(conf_get_exclude(this->C, this->wfile));
   this->recurse  = conf_get_recurse(this->C, this->wfile);
-  this->throttle = new_throttle(this->wfile, __parse_time(conf_get_throttle(this->C, this->wfile)));
+  this->interval = __parse_time(INTERVAL, conf_get_interval(this->C, this->wfile));
+  this->throttle = new_throttle(
+    this->wfile, __parse_time(EXCEEDS, conf_get_throttle(this->C, this->wfile))
+  );
   this->logger   = new_logger(conf_get_log(this->C, this->wfile));
   this->rules    = new_array();
   if ((__read_rules(this)) == FALSE) {
@@ -144,7 +163,9 @@ fido_reload(FIDO this)
 
   logger(this->logger, "THROTTLE: old value: %s", throttle_to_string(this->throttle));
   this->throttle = throttle_destroy(this->throttle);
-  this->throttle = new_throttle(this->wfile, __parse_time(conf_get_throttle(this->C, this->wfile))); 
+  this->throttle = new_throttle(
+    this->wfile, __parse_time(EXCEEDS, conf_get_throttle(this->C, this->wfile))
+  ); 
   logger(this->logger, "THROTTLE: new value: %s", throttle_to_string(this->throttle));
 
   this->serial   = conf_get_serial(this->C);
@@ -159,6 +180,8 @@ start(FIDO this)
     return __start_watcher(this);
   } else if (! strncmp(this->rfile, "exceeds", 7)) {
     return __start_agecheck(this);
+  } else if (! strncmp(this->rfile, "count", 5)) {
+    return __start_countcheck(this);
   } else {
     return __start_parser(this);
   }
@@ -196,7 +219,7 @@ __start_watcher(FIDO this)
       this->cache = tmp;
       __persist(this, put);
     }
-    sleep(1);
+    sleep(this->interval);
     if (this->serial != conf_get_serial(this->C)) {
       fido_reload(this);
     }
@@ -212,7 +235,7 @@ __start_agecheck(FIDO this)
     if (this->serial != conf_get_serial(this->C)) {
       fido_reload(this);
     }
-    sleep(1);
+    sleep(this->interval);
   }
   return TRUE;
 }
@@ -225,7 +248,7 @@ private BOOLEAN
 __agecheck(FIDO this, char *dir)
 {
   DIR *D;
-  int sec = __parse_time(this->rfile);
+  int sec = __parse_time(EXCEEDS, this->rfile);
 
   D = opendir(dir);
   if (! D) {
@@ -234,24 +257,15 @@ __agecheck(FIDO this, char *dir)
   }
   while (TRUE) { 
     int  res = 0;
-    char *cmd;
-    char buf[1024];
-    RULE rule;
 
     if (! __is_directory(this->wfile)) {
       /**
        * We're watching a single file
        */
       if (__exceeds(this, this->wfile, sec) == TRUE) {
-        memset(buf, '\0', sizeof buf);
-        snprintf(buf, 256, "EXCEEDS: %s", this->wfile);
-        rule = new_rule(buf);
-        cmd  = __build_command(this, rule);
-        res  = __run_command(this, cmd);
-        rule = rule_destroy(rule);
-        xfree(cmd);
+        res  = __run_command(this, this->action);
         if (res != 0) {
-          VERBOSE(is_verbose(this->C), "ERROR: our command failed: %s", cmd);
+          VERBOSE(is_verbose(this->C), "ERROR: command failed: %s", this->action);
         }
       }
     } else {
@@ -276,7 +290,11 @@ __agecheck(FIDO this, char *dir)
         len = snprintf(path, MAXPATH, "%s/%s", dir, name);
         if (len >= MAXPATH) {
           logger(this->logger, "FATAL: the path (%s) is too long. Maximum path lenght is %d", path, MAXPATH);
-          VERBOSE(is_verbose(this->C), "FATAL: the path (%s) is too long. Maximum path lenght is %d", path, MAXPATH);
+          VERBOSE( 
+            is_verbose(this->C), 
+            "FATAL: the path (%s) is too long. Maximum path lenght is %d", 
+            path, MAXPATH
+          );
           exit (1);
         }
         if (__exceeds(this, path, sec) == TRUE) {
@@ -286,13 +304,10 @@ __agecheck(FIDO this, char *dir)
           } else {
             VERBOSE(is_verbose(this->C), "%s (%s) exceeds %d seconds", path, entry->d_name, sec);
           }
-          memset(buf, '\0', sizeof buf);
-          snprintf(buf, 256, "EXCEEDS: %s", path);
-          rule = new_rule(buf);
-          cmd  = __build_command(this, rule);
-          res  = __run_command(this, cmd);
-          rule = rule_destroy(rule);
-          xfree(cmd); 
+          res  = __run_command(this, this->action);
+          if (res != 0) {
+            VERBOSE(is_verbose(this->C), "ERROR: command failed: %s", this->action);
+          }
         }
         if ((this->recurse) && (entry->d_type & DT_DIR)) {
            __agecheck(this, path);
@@ -308,6 +323,122 @@ __agecheck(FIDO this, char *dir)
   return TRUE;
 }
 
+private BOOLEAN
+__start_countcheck(FIDO this)
+{
+  while (TRUE) {
+    __countcheck(this, this->wfile);
+    if (this->serial != conf_get_serial(this->C)) {
+      fido_reload(this);
+    }
+    sleep(1);
+  }
+  return TRUE;
+}
+
+private BOOLEAN
+__countcheck(FIDO this, char *dir)
+{
+  DIR     *D;
+  int     cnt   = 0;
+  int     sum   = -1;
+  int     op    = GREATERTHAN;
+  char    *tmp  = this->rfile;
+
+  if (tmp == NULL || strlen(tmp) < 1) return FALSE;
+
+  /**
+   * op is set by __parse_count
+   */
+  cnt = __parse_count(this->rfile, &op);
+
+  D = opendir(dir);
+  if (! D) {
+    fprintf (stderr, "Cannot open directory '%s'\n", dir);
+    exit (EXIT_FAILURE);
+  }
+  
+  while (TRUE) {
+    int  res = 0;
+    BOOLEAN okay  = TRUE;
+
+    if (! __is_directory(dir)) {
+      logger(this->logger, "%s [error] unable to open directory: %s and count files", program_name, dir);
+      if (is_verbose(this->C)) {
+        NOTIFY(ERROR, "unable to open directory: %s [exiting]", dir);
+      }
+      exit(1);
+    } else {
+      sum = __countfiles(dir, this->recurse);
+      if (op == GREATERTHAN) {
+        if (sum > cnt) { 
+          okay = FALSE;
+          VERBOSE(is_verbose(this->C), "[alert] file count in %s (%d) is greater than %d", dir, sum, cnt);
+        } else { 
+          okay = TRUE;
+          VERBOSE(is_verbose(this->C), "[pass] file count in %s (%d) is less than %d", dir, sum, cnt);
+        }
+      } else if (op == EQUALTO) {
+        if (sum == cnt) { 
+          okay = FALSE;
+          VERBOSE(is_verbose(this->C), "[alert] file count in %s (%d) is equal to %d", dir, sum, cnt);
+        } else {
+          okay = TRUE;
+          VERBOSE(is_verbose(this->C), "[pass] file count in %s (%d) does not equal %d", dir, sum, cnt);
+        }
+      } else if (op == LESSTHAN) {
+        if (sum < cnt) { 
+          okay = FALSE;
+          VERBOSE(is_verbose(this->C), "[alert] file count in %s (%d) is less than %d", dir, sum, cnt);
+        } else {
+          okay = TRUE;
+          VERBOSE(is_verbose(this->C), "[pass] file count in %s (%d) is greater than %d", dir, sum, cnt);
+        }
+      }
+      if (!okay) {
+        VERBOSE(is_verbose(this->C), "firing this command: %s", this->action);
+        logger(this->logger, "%s [alert] firing: %s", program_name, this->action);
+        res  = __run_command(this, this->action);
+        if (res != 0) {
+          VERBOSE(is_verbose(this->C), "ERROR: command failed: %s", this->action);
+        }
+      }
+      sleep(this->interval);
+    }
+  }
+}
+
+private int 
+__countfiles(char *path, BOOLEAN recursive) {
+  DIR    *dptr = NULL;
+  struct dirent *direntp;
+  char   *npath;
+  if (!path) return 0;
+  if ((dptr = opendir(path)) == NULL ) {
+    return 0;
+  }
+
+  int count=0;
+  while ((direntp = readdir(dptr))) {
+    if (strcmp(direntp->d_name,".") == 0 || strcmp(direntp->d_name,"..") == 0) continue;
+    switch (direntp->d_type) {
+      case DT_REG:
+        count++;
+        break;
+      case DT_DIR:
+        if (! recursive) {
+          break;
+        }
+        npath = malloc(strlen(path)+strlen(direntp->d_name)+2);
+        sprintf(npath,"%s/%s",path, direntp->d_name);
+        count += __countfiles(npath, recursive);
+        free(npath);
+        break;
+    }
+  }
+  closedir(dptr);
+  return count;
+}
 
 
 private BOOLEAN
@@ -703,7 +834,43 @@ void __demodify(char *s, const char *modifier)
 }
 
 private int
-__parse_time(char *p)
+__parse_count(char *p, int *op)
+{
+  int  i; 
+  char *tmp;
+  int  count = 0;
+  char mod[] = "count";
+ 
+  if (p == NULL || strlen(p) < 1) return -1;
+
+  tmp = trim(p);
+  __demodify(tmp, mod);
+  tmp = trim(tmp);
+
+  if (strmatch(tmp, ">")) {
+    *op = GREATERTHAN;
+  } else if (strmatch(tmp, ">=")) {
+    *op = GREATERTHAN;
+  } else if (strmatch(tmp, "==")) {
+    *op = EQUALTO;
+  } else if (strmatch(tmp, "<")) {
+    *op = LESSTHAN;
+  } else if (strmatch(tmp, "<=")) {
+    *op = LESSTHAN;
+  } else if (ISNUMBER(*tmp)){
+    count = atoi(tmp);
+  }
+  for (i = 0; i < (int)strlen(tmp); i++) {
+    if (! ISNUMBER(tmp[i])) {
+       tmp++;
+    }
+  }
+  count = atoi(tmp);
+  return count;
+}
+
+private int
+__parse_time(int m, char *p)
 {
   size_t x   = 0;
   int  time  = 0;
@@ -714,7 +881,9 @@ __parse_time(char *p)
   if (p == NULL || strlen(p) < 1) return -1;
 
   p = trim(p);
-  __demodify(p, mod);
+  if (m == EXCEEDS) {
+    __demodify(p, mod);
+  }
   p = trim(p);
  
   while (isdigit(p[x]))
