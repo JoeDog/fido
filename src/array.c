@@ -25,8 +25,7 @@
 #include <string.h>
 #include <limits.h>
 #include <array.h>
-#include <joedog/joedog.h>
-
+#include <memory.h>
 #include <util.h>
 
 typedef void *array;
