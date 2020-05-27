@@ -20,7 +20,7 @@
 ## Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 ##
 
-noinst_HEADERS  = joedog.h getopt.h boolean.h defs.h
+noinst_HEADERS  = getopt.h boolean.h defs.h
 
 DISTCLEANFILES  = joepath.h
 
