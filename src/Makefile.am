@@ -27,10 +27,6 @@ AM_CFLAGS              =   $(WARN_CFLAGS) $(PTHREAD_CFLAGS)
 
 LDFLAGS                =   $(PTHREAD_LDFLAGS)
 
-fido_LDADD             =   $(top_srcdir)/lib/joedog/libjoedog.la
-
-fido_DEPENDENCIES      =   $(top_srcdir)/lib/joedog/libjoedog.la
-
 fido_SOURCES           =    \
 array.c    array.h          \
 base16.c   base16.h         \
@@ -43,6 +39,9 @@ fido.c     fido.h           \
 getopt.c   getopt1.c        \
 hash.c     hash.h           \
 logger.c   logger.h         \
+memory.c   memory.h         \
+notify.c   notify.h         \
+perl.c     perl.h           \
 pid.c      pid.h            \
 main.c     ansidecl.h       \
 rset.c     rset.h           \
