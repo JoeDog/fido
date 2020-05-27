@@ -11,7 +11,6 @@
 #include <unistd.h>
 #include <joedog/defs.h>
 #include <joedog/boolean.h>
-#include <joedog/joedog.h>
 
 #define BUFSIZE 1024
 

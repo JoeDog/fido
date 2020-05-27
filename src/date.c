@@ -2,7 +2,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
-#include <joedog/joedog.h>
+#include <memory.h>
 
 #if 0
   ATOM_FORMAT     =  0;  // 2010-05-21T13:33:59-0400

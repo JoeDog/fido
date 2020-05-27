@@ -23,7 +23,6 @@
 #define __CREW_H
 
 #include <pthread.h>
-#include <joedog/joedog.h>
 #include <joedog/boolean.h>
 
 typedef struct work

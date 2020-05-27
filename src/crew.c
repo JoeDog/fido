@@ -20,12 +20,14 @@
  *
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/time.h>
 #include <pthread.h>
 #include <crew.h>
-#include <joedog/joedog.h>
+#include <notify.h>
+#include <memory.h>
 #include <joedog/defs.h>
 #include <joedog/boolean.h>
 

@@ -7,7 +7,8 @@
 #include <throttle.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <joedog/joedog.h>
+#include <memory.h>
+#include <notify.h>
 #include <joedog/boolean.h>
 #include <joedog/defs.h>
 

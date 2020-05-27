@@ -3,7 +3,6 @@
 
 #include <stdarg.h>
 #include <array.h>
-#include <joedog/joedog.h>
 #include <joedog/defs.h>
 #include <joedog/boolean.h>
 

@@ -58,7 +58,6 @@ char *strchr (), *strrchr ();
 
 #include <joedog/defs.h>
 #include <joedog/boolean.h>
-#include <joedog/joedog.h>
 
 #include <crew.h>
 #include <hash.h>
@@ -66,6 +65,7 @@ char *strchr (), *strrchr ();
 #include <logger.h>
 #include <pid.h>
 #include <fido.h>
+#include <notify.h>
 #include <util.h>
 #include <runner.h>
 #include <setup.h>

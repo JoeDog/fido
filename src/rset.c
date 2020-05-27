@@ -1,7 +1,10 @@
 #include <rset.h>
 #include <array.h>
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
+#include <memory.h>
 
 struct RSET_T
 {

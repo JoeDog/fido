@@ -37,6 +37,11 @@ BOOLEAN strmatch(char *str1, char *str2);
 void    debug(const char *fmt, ...);
 char    *uppercase(char *s, size_t len);
 char    *lowercase(char *s, size_t len);
+void   itoa(int, char []);
+void   reverse(char []);
+int    my_random(int, int);
+char   *substring(char *, int, int);
+float  elapsed_time(clock_t);
 
 #endif /*UTIL_H*/
 

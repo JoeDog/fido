@@ -6,7 +6,8 @@
 #include <unistd.h>
 #include <errno.h>
 #include <runner.h>
-#include <joedog/joedog.h>
+#include <memory.h>
+#include <notify.h>
 #include <joedog/boolean.h>
 #include <joedog/defs.h>
 
