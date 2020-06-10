@@ -45,6 +45,8 @@ struct FIDO_T
   char      *wfile;
   char      *rfile;
   char      *action;
+  char      *clear;
+  BOOLEAN   event;
   int       interval;
   char      *exclude;
   BOOLEAN   recurse;
@@ -101,6 +103,8 @@ new_fido(CONF C, const char *file)
   this->wfile    = xstrdup(file);
   this->rfile    = xstrdup(conf_get_rules(this->C,  this->wfile));
   this->action   = xstrdup(conf_get_action(this->C, this->wfile));
+  this->clear    = xstrdup(conf_get_clear(this->C,  this->wfile));
+  this->event    = FALSE;
   this->exclude  = xstrdup(conf_get_exclude(this->C, this->wfile));
   this->recurse  = conf_get_recurse(this->C, this->wfile);
   this->interval = __parse_time(INTERVAL, conf_get_interval(this->C, this->wfile));
@@ -124,6 +128,7 @@ fido_destroy(FIDO this) {
   xfree(this->wfile);
   xfree(this->rfile);
   xfree(this->action);
+  xfree(this->clear);
   this->rules = array_destroy(this->rules);
   xfree(this);
   return NULL;
@@ -149,6 +154,13 @@ fido_reload(FIDO this)
   }
   this->action = xstrdup(conf_get_action(this->C, this->wfile));
   logger(this->logger, "ACTION: new value: %s", this->action);
+
+  if (this->clear != NULL && strlen(this->clear) > 0) {
+    logger(this->logger, "CLEAR: old value: %s", this->clear);
+    xfree(this->clear);
+  }
+  this->clear = xstrdup(conf_get_clear(this->C, this->wfile));
+  logger(this->logger, "CLEAR: new value: %s", this->clear);
 
   if (this->exclude != NULL && strlen(this->exclude) > 0) {
     logger(this->logger, "EXCLUDE: old value: %s", this->exclude);
@@ -256,17 +268,23 @@ __agecheck(FIDO this, char *dir)
     exit (EXIT_FAILURE);
   }
   while (TRUE) { 
-    int  res = 0;
+    int res = 0;
 
     if (! __is_directory(this->wfile)) {
       /**
        * We're watching a single file
        */
       if (__exceeds(this, this->wfile, sec) == TRUE) {
+        this->event = TRUE;
         res  = __run_command(this, this->action);
         if (res != 0) {
           VERBOSE(is_verbose(this->C), "ERROR: command failed: %s", this->action);
         }
+      } else {
+        if (this->event == TRUE) {
+          // clear
+        }
+        this->event = FALSE;
       }
     } else {
       /**
@@ -396,11 +414,27 @@ __countcheck(FIDO this, char *dir)
         }
       }
       if (!okay) {
+        this->event = TRUE;
         VERBOSE(is_verbose(this->C), "firing this command: %s", this->action);
         logger(this->logger, "%s [alert] firing: %s", program_name, this->action);
         res  = __run_command(this, this->action);
         if (res != 0) {
           VERBOSE(is_verbose(this->C), "ERROR: command failed: %s", this->action);
+        }
+      } else {
+        if (this->event == TRUE) {
+          if (this->clear != NULL && strlen(this->clear) > 2) {
+            VERBOSE(is_verbose(this->C), "clearing event with: %s", this->clear);
+            logger(this->logger, "%s [alert] clearing event with: %s", program_name, this->clear);
+            res  = __run_command(this, this->clear);
+            if (res != 0) {
+              VERBOSE(is_verbose(this->C), "ERROR: command failed: %s", this->clear);
+            }
+          } else {
+            VERBOSE(is_verbose(this->C), "clearing event: no program to run");
+            logger(this->logger, "%s [alert] clearing event: no program to run", program_name);
+          }
+          this->event = FALSE;
         }
       }
       sleep(this->interval);
@@ -450,6 +484,10 @@ __start_parser(FIDO this)
   while (TRUE) { // as of fido 1.0.8 we'll run whether we have a file or not
     if (__is_readable (this)) {
       offset = __get_offset(this);
+      if (rc < 0) {
+        offset = 0;
+        rc     = 0;
+      }
       while (rc == 0 && offset >= 0) {
         offset = __ticks (this, offset);
         if (offset >= 0) {
@@ -531,14 +569,12 @@ char *fgetline(FILE *fp)
   return s; 
 }
 
-//--ticks
 private long
 __ticks (FIDO this, long offset)
 {
   FILE *fp;
   char *line;
   long  pos;
-
 
   fp = fopen (this->wfile, "r");
   if (fp != NULL) {
@@ -741,7 +777,10 @@ __build_command(FIDO this, RULE rule)
     cmd = xmalloc(strlen(this->action)+strlen(rule_get_property(rule))+5);
     memset(cmd, '\0', strlen(this->action)+strlen(rule_get_property(rule))+5);
     snprintf(
-      cmd, strlen(this->action)+strlen(rule_get_property(rule))+5, "%s %s", this->action, rule_get_property(rule)
+      cmd, 
+      strlen(this->action)+strlen(rule_get_property(rule))+5, "%s %s", 
+      this->action, 
+      rule_get_property(rule)
     );
   } else {
     cmd = xstrdup(this->action);
