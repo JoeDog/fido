@@ -42,5 +42,3 @@ missing                \
 mkinstalldirs          \
 mkstamp
 
-
-                              
