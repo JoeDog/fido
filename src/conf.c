@@ -145,6 +145,10 @@ show(CONF this, BOOLEAN quit)
     if (tmp) {
       printf("    action:  %s\n", tmp);
     }
+    tmp = hash_get(this->items, "%s:clear", keys[x]);
+    if (tmp) {
+      printf("    clear:  %s\n", tmp);
+    }
     tmp = hash_get(this->items, "%s:exclude", keys[x]);
     if (tmp) {
       printf("   exclude:  %s\n", tmp);
@@ -223,6 +227,13 @@ conf_get_action(CONF this, char *key)
 {
   return hash_get(this->items, "%s:action", key);
 }
+
+char *
+conf_get_clear(CONF this, char *key)
+{
+  return hash_get(this->items, "%s:clear", key);
+}
+
 
 char *
 conf_get_exclude(CONF this, char *key)
