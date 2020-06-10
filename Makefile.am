@@ -34,3 +34,9 @@ EXTRA_DIST        =    ChangeLog README.md acspecific.m4 aclocal.m4 acinclude.m4
 
 DISTCLEANFILES    =    libtool config.status 
 
+rpm:
+	utils/rpm.sh "${prefix}/.."
+	cd "${prefix}/.." && sudo make 
+
+.PHONY: rpm
+
