@@ -6,7 +6,8 @@ TAR=/bin/tar
 RPMBUILD=/usr/bin/rpmbuild
 SRCDIR=/usr/src/redhat/SOURCES
 ZIP=$(PACKAGE)-$(VERSION).zip
-SRC=/usr/src/redhat/SOURCES/fido-$(VERSION).tar.gz
+TOP=/usr/src/redhat
+SRC=$(TOP)/SOURCES/fido-$(VERSION).tar.gz
 SUDO=/usr/bin/sudo
 DIRS=etc usr
 
@@ -19,4 +20,10 @@ dist:
 
 build:
 	$(SUDO) $(RPMBUILD) -ba $(SPECFILE)
+
+clean:
+	rm $(TOP)/SOURCES/$(PACKAGE)-$(VERSION).tar.gz
+	rm -Rf $(TOP)/BUILD/$(PACKAGE)-$(VERSION)
+	rm $(TOP)/SRPMS/$(PACKAGE)-$(VERSION)*
+	rm $(TOP)/RPMS/x86_64/$(PACKAGE)-debuginfo*
 
