@@ -3,6 +3,11 @@
 PREFIX=$1
 SYSTEMD=false
 
+if [ ! -e "$1" ] ; then
+  echo "Usage: rpm.sh /path/to/rmpbuild/dir"
+  exit 1
+fi
+
 if [ ! -d "${PREFIX}" ]; then
   echo "${PREFIX} does not exist"
   exit 1
@@ -25,6 +30,17 @@ fi
 
 if [ $SYSTEMD == true ]; then
   echo "SYSTEMD"
+  if [ ! -e "${PREFIX}/usr/lib/systemd/system" ] ; then
+    mkdir -p "${PREFIX}/usr/lib/systemd/system"
+    chown root:root "${PREFIX}/usr"
+    chown root:root "${PREFIX}/usr/lib"
+    chown root:root "${PREFIX}/usr/lib/systemd"
+    chown root:root "${PREFIX}/usr/lib/systemd/system"
+  fi
+  cp "${BASE}/fido.service" "${PREFIX}/usr/lib/systemd/system"
+  chmod 644 "${PREFIX}/usr/lib/systemd/system/fido.service"
+  cp "${BASE}/rpm-7.spec" "${PREFIX}/fido.spec"
+  cp "${BASE}/rpm.make"   "${PREFIX}/Makefile"
 else
   ## INSTALL /etc/init.d/fido
   ##         /etc/sysconfig/fido 
