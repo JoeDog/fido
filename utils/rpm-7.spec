@@ -1,4 +1,5 @@
-%define    dist .el6
+%define    dist .el7
+%define    _topdir /usr/src/redhat
 Summary:   Fido - a file monitoring utility
 Name:      fido
 Version:   1.1.6
@@ -36,27 +37,18 @@ rm -rf $RPM_BUILD_ROOT
 /etc/fido
 /etc/fido/fido.conf.sample
 /etc/fido/rules
-/etc/init.d/fido
-/etc/sysconfig/fido
 /usr/share/man/man1/fido.1.gz
 /usr/share/man/man5/fido.conf.5.gz
 /usr/sbin/fido
+/usr/lib/systemd/system/fido.service
 
 %post
 if [ -f /etc/fido.bak ] ; then
   rm -Rf /etc/fido 
   mv /etc/fido.bak /etc/fido
 fi
-chkconfig --add fido
+systemctl enable fido.service
 
 %changelog
-* Wed May 27 2020 Jeffrey Fulmer <jeff@joedog.org>
-- Updated for 1.1.6; made RHEL6 specific
-* Fri Sep 26 2014 Jeffrey Fulmer <jeff@joedog.org>
-- Fixed versioning
-* Fri Apr  5 2013 Jeffrey Fulmer <jeff@joedog.org>
-- Added logic to preserve existing /etc/fido
-* Mon Mar  4 2013 Jeffrey Fulmer <jeff@joedog.org>
-- Updated for release 1.0.8
-* Mon Mar 31 2008 Jeffrey Fulmer <jeff@joedog.org>
-- Created initial spec file
+* Wed Jun 10 2020 Jeffrey Fulmer <jeff@joedog.org>
+- Created initial RHEL7 spec file
