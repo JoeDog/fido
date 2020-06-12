@@ -25,53 +25,54 @@ FILE level, then $_PROGRAM applies a GLOBAL setting. Here's an example:
 
   # FILE SETTINGS
   /var/log/messages {
-    log = /var/log/fido.log
+    log      = value
+    rules    = regex or filename or exceeds or modified or count 
+    excludes = regex (filenames that match will be ignored)
+    action   = /path/to/script <args>
+    clear    = /path/to/script <args>
+    interval = Ns or Nm or Nh or Nd where N is a number
   }
-
-In this example, we've set 'log' twice. Once at the GLOBAL level and once
-at the FILE level. The FILE level takes precedent. In this case all logged
-activity for /var/log/messages monitoring will go to /var/log/fido.log If 
-we log activity for other files that don't have a 'log' specified, then it 
-will go to syslog.
 
 Here is a list of available settings:
 
 =head2 log
 
-Use this setting to direct logging output. Its values can be either 'syslog' 
-or '/path/to/file' This option is available at both the GLOBAL and FILE levels. 
+This is a GLOBAL and FILE level directive. If it's set at the file level, then
+fido will use that mechanism for logging activity for the file/directory it is
+monitoring. If log isn't set at the file level, then it uses the global mechanism
+for logging. The choices are 'syslog' or a path to a file:
 
   log = syslog
   log = /var/log/fido.log
  
 =head2 pid
 
-Use this setting to assign a file to hold $_PROGRAM's process ID (pid). This
-option is available only at the GLOBAL level. The default setting is 
-/var/run/$_PROGRAM.pid 
+This is a GLOBAL directive which cannot be set inside a file block. Use this setting 
+to assign a file to hold $_PROGRAM's process ID (pid). Default: /var/run/$_PROGRAM.pid 
 
   pid = /home/jeff/var/$_PROGRAM.pid
   
 =head2 daemon
 
-Use this option to run $_PROGRAM in the background as a daemon. By default,
-$_PROGRAM will run as a daemon. This setting is available only at the global
-level. It takes one of two values, true or false. It runs in the foreground 
-when the setting is 'false'
+This is a GLOBAL directive which cannot be set inside a file block. By default, $_PROGRAM 
+will run in the background as a daemon. It is often helpful to run this program in the
+foreground with verbosity in order to troubleshoot/test the configuration. Both
+directives are available at the commandline: fido -v --daemon=false 
+
+  daemon = true
  
 =head2 rulesdir
 
-$_PROGRAM monitors a log file and searches for pattern matches. These patterns 
-are regular expressions that can be stored in a rules file. This directive tells
-$_PROGRAM where to look for its rules. By default, it will look in /etc/$_PROGRAM/rules
-You can override the default with this setting. This option is available ONLY at the
-GLOBAL level.
+This is a GLOBAL directive which sets the directory in which we can store our rules
+files. So if a file block sets 'rules = jboss.conf' then fido will look for that file
+in '$rulesdir/jboss.conf' The default rulesdir is /etc/$_PROGRAM/rules.
 
   rulesdir = /usr/local/etc/$_PROGRAM/rules
 
 =head2 rules
 
-This is a FILES level directive that tells $_PROGRAM where to find its pattern
+This is a FILES level directive that tells $_PROGRAM what to do inside the block.
+where to find a file of pattern
 matches. It can take one of three different values, a regex, the 'modified' directive
 or a file name. If the value is a regex, then $_PROGRAM will use that rule 
 as it parses the file it's watching. If the value is the 'modified' directive, then 
@@ -80,46 +81,74 @@ then it will read $rulesdir/$rules for all it's patterns. The benefit of using a
 is that you can set many patterns, one on each line. $_PROGRAM will try each line as 
 it looks for a match.
 
-  rules = modified
-  rules = .*OutOfMemory.*
-  rules = exceeds N seconds|minutes|hours|days
-  rules = haha.conf 
+  # Instructs $_PROGRAM to trigger an alert if any file's modification 
+  # time changes inside the /export directory
+  /exports {
+    rules = modified
+  } 
 
-In the first example, $_PROGRAM will trigger an action if the modification date of the 
-file it's monitoring is changed. In the second example, it will tail the file it's 
-monitoring and trigger an action each time it matches the '.*OutOfMemory.*' pattern. In
-the third example, it will triggern an action if the file's timestamp exceeds a designated
-time. If the file we're monitoring is a directory, then an alert will be triggered if any
-file in that directory exceeds the designated time. In the final example, it will trigger 
-an action each time it matches a pattern inside $rulesdir/haha.conf 
+  # Instructs $_PROGRAM to trigger an alert if it matches the pattern 
+  # .*OutOfMemory.* inside the file /var/log/jboss/catalina.out
+  /var/log/jboss/catalina.out { 
+    rules = .*OutOfMemory.*
+  }
 
-Beginning with version 1.1.4, you can use parentheses to capture text and assign to 
-variables $1, $2, etc.  This is useful if you'd like to send matched text to your program, 
-for example:
+  # Instructs $_PROGRAM to trigger an alert if a file inside /exports
+  # is older than 7 days
+  /exports {
+    rules = exceeds 7d
+  } 
 
+  # Instructs $_PROGRAM to trigger an alert if it matches a pattern inside
+  # $rulesdir/haha.conf inside /var/log/jboss/catalina.out
+  /var/log/jboss/catalina.out {
+    rules = haha.conf 
+  }
+
+  # Instructs $_PROGRAM to trigger an alert if the file count inside the
+  # directory /usr/share/puppet-dashboard/spool is greater than 50
+  /usr/share/puppet-dashboard/spool { 
+    rules = count > 50
+  }
+
+rules DETAILS
+
+'modified' instructs fido to trigger an action if the modified date of the file(s) it's
+monitoring have changed. 
+
+'pattern' such as '.*OutOfMemory.*' in the example above is a regular expression that 
+$_PROGRAM attemps to match inside a file.  Beginning with version 1.1.4, you can use 
+parentheses to capture text and assign to variables $1, $2, etc.  This is useful if 
+you'd like to send matched text to your program, for example:
+
+  # Capture the IP address and assign it to $1 then use $1 
+  # as a program parameter.
   /var/log/httpd/joedog-access_log {
     rules  = ^([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+).*GoogleBot
     action = /home/jeff/bin/googler $1
   }
 
-In the file block above, the IP address is captured within parentheses and passed to the 
-action as variable $1
+'file' works similar to 'pattern' although it points to a file of regular expressions. 
+The directive takes a filename like 'haha.conf' $_PROGRAM will look for 'haha.conf' 
+inside the $rulesdir which is set at the global level. 
 
+'exceeds' is an aging  directive. This instructs $_PROGRAM to look for files inside
+a directory whose age is older than the value. 'exceeds 7 days' will fire an alert if the
+file is 8 days old. Acceptable modifiers are: 'seconds', 'minutes', 'hours', 'days'
+
+'count' is a directory directive. This instructs $_PROGRAM to count the files inside
+a directory and fire an alert if the criteria is met. 'rules = count > 50' will fire
+an alert there are 51 files inside the directory.
 
 =head2 action
 
-This is a FILES level directive that tells $_PROGRAM what to do in the event 
+This is a FILE level directive that tells $_PROGRAM what to do in the event 
 of a pattern match. Generally, you'll want to specify a script although you 
 can specify a program with parameters:
 
   action = echo "action alert!!!!" | /usr/sbin/sendmail -v jeff@joedog.org
   action = /home/jeff/bin/haha
   action = /usr/local/bin/myscript $1 $2
-
-Beginning with version 1.1.4, fido supports regex back references. Any text you 
-capture with a regex match within a set of parentheses can be sent to the action
-program in $1 $2 $3 etc.
-
 
 =head2 throttle
 
@@ -149,7 +178,7 @@ Given this file block, $_PROGRAM will execute an action if any file inside the d
  
 =head2 recurse
 
-This is a FILES level directive that that only works when you monitor directories. If
+This is a FILE level directive that that only works when you monitor directories. If
 recurse is true, then fido will search all subdirectories below the path. If recurse is
 false then fido will only examine files inside the top-level directory.
 
@@ -157,6 +186,12 @@ false then fido will only examine files inside the top-level directory.
   rule    = exceeds 1 month
   recurse = true 
 }
+
+=head2 interval 
+
+This is a FILE level directive which tells $_PROGRAM how long to pause between 
+iterations. 'interval = 5m' pauses for five minutes between checks. Acceptable 
+modifiers are 's' (seconds), 'm' (minutes), 'h' (hours) and 'd' (days)
 
 =head2 capture
 
