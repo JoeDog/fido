@@ -3,9 +3,12 @@
 #
 
 # 
-# log - select a mechanism for logging fido 
-# daemon information. The choices are syslog
-# or a path to a file.
+# log - select a mechanism for logging fido daemon information. 
+# The choices are syslog or a path to a file.
+#
+# NOTE: If you're going to monitor the syslog log, DO NOT set
+#       logging to syslog or you'll create a recursive condition
+#       in which fido trips itself. 
 #
 # example: log = /var/log/fido.log
 #
@@ -22,45 +25,45 @@ log      = syslog
 pid      = /var/run/fido.pid
 
 #
-# daemon - instructs fido to run in the background 
-# 'true' or in the foreground 'false'. 
+# daemon - instructs fido to run in the background 'true' or 
+# in the foreground 'false'. --daemon=false is good way to 
+# troubleshoot your rules and directives before putting them
+# into production
 # 
 # example: daemon = false
 #
 daemon   = true
 
 #
-# vebose - if true, this instructs fido to print debugging 
-# information to stdout. It's only useful to set this to 
-# true when running the program in the foreground (daemon = false)
+# vebose - if true, this instructs fido to print debugging information 
+# to stdout. It's only useful to set this to true when running the 
+# program in the foreground (daemon = false)
 # 
 # example: verbose = true
 #
 verbose  = false
 
 #
-# rulesdir - this directive tells fido where to look for its
-# rules files. If you set it to '/etc/fido/rules' and set 
-# rules = haha.conf in a file block, then fido will look for 
-# that file's rules in /etc/fido/rules/haha.conf
+# rulesdir - this directive tells fido where to look for its rules files. 
+# If you set it to '/etc/fido/rules' and set rules = haha.conf in a file
+# block, then fido will look for haha.conf in /etc/fido/rules
 #
 # exmaple: rulesdir = /usr/local/etc/fido/rules
 #
 rulesdir = /etc/fido/rules
 
 #
-# user - instructs fido to run as a specified users. If this 
-# directive isn't set, then fido will run as the user who 
-# who invoked the daemon.
+# user - instructs fido to run as a specified users. If this directive 
+# isn't set, then fido will run as the user who who invoked the daemon.
 #
 # example: user = jdfulmer
 #
 # user = root
 
 #
-# group - instructs fido to run with specified group ownership. 
-# If this directive isn't set, then fido will run user the primary 
-# group of the user who invoked the daemon.
+# group - instructs fido to run with specified group ownership.  If this 
+# directive isn't set, then fido will run user the primary group of the 
+# user who invoked the daemon.
 #
 # example: group = jdfulmer
 #
@@ -71,8 +74,34 @@ rulesdir = /etc/fido/rules
 #
 
 #
-# This configuration runs an action if the file is 
-# modified, i.e., it's modification time changes.
+# PATTERN MATCHING in an active log file and triggering a script on a match 
+# is fido's bread and butter. In this config, it scans catalina,out looking 
+# for an OutOfMemoryError. If it finds that error, then it runs a script that
+# you assign to action, in this case /usr/local/bin/sendtrap.sh
+#
+# /var/log/jboss/catalina.out {
+#   rules  = .*OutOfMemoryError.*
+#   action = /usr/local/bin/sendtrap.sh
+#   log    = syslog
+# }
+
+#
+# This is another example of PATTERN MATCHING. In this case, you can set a 
+# series of regular expressions in a separate file. If fido matches any of
+# them, then it runs the script assigned in 'action' Fido looks for the rules
+# file inside the rulesdir in the config. Default: /etc/fido/rules/apache.conf
+#
+# NOTE: If there's no 'log' directive in the block, fido uses the default set
+#       in the global area above.
+#
+# /var/log/httpd/access_log {
+#  rules  = apache.conf
+#  action = /usr/local/bin/sendpage.sh
+# }
+
+#
+# MODIFIED is a special rules directive. It tells fido to fire an action if
+# the file its watching is modified, i.e., its modification time changes.
 #
 # /data/ftpd/pub/upload.txt {
 #   rules  = modified
@@ -81,37 +110,57 @@ rulesdir = /etc/fido/rules
 # }
 
 #
-# This configuration executes an action if any file
-# inside the /export directory is older than 7 days
-# as long as that file does NOT begin with . nor is
-# it named CVS or Makefile. If recure is true, then
-# fido will search subdirectories. 
+# FILE AGING is another watch that fido can conduct. In this configuration,
+# fiod watches the /export directory for any file older than 7 days. If a file
+# exceeds 7 days (168 hours), then it fires the action script. 
+#
+# 'excludes' is a directive which tells it to ignore files that match a regular 
+# expression. In this example, it doesn't fire if '.' CVS or Makefile are older
+# than 7 days
+#
+# 'recurse' is a directive which tells fido to look in subdirectives under /export
+# for files older than 7 days. The default is false.
+#
+# 'interval' tells fido how long to pause between checks. In the example below,
+# fido checks the ages of files inside /export every 10 minutes. The accepted
+# modifiers are as follows:
+# 's' = seconds
+# 'm' = minutes
+# 'h' = hours
+# 'd' = days
 #
 # /export {
-#   rules   = exceeds 7 days
-#   exclude = ^\.|CVS|Makefile
-#   action  = /usr/local/bin/sendtrap.sh
-#   recurse = true
+#   rules    = exceeds 7 days
+#   exclude  = ^\.|CVS|Makefile
+#   action   = /usr/local/bin/sendtrap.sh
+#   recurse  = true
+#   interval = 10m 
 # }
 
 #
-# This configuration runs an action if OutOfMemoryError 
-# suddenly appears in the log file
+# FILE COUNT is another watch fido can perform. In this configuration, it 
+# watches /usr/share/puppet-dashboard/spool for a file count greater than 
+# fifteen. If the directory contains 16 files, it triggers the action. 
 # 
-# /var/log/jboss/catalina.out {
-#   rules  = .*OutOfMemoryError.*
-#   action = /usr/local/bin/sendtrap.sh
-#   log    = syslog
+# 'recurse' is a directive which tells fido to look in subdirectives under
+# /usr/share/puppet-dashboard/spool Subdirectories are not included in the 
+# file count total. 
+#
+# 'interval' tells fido how long to pause between checks. In the example below,
+# fido counts the files inside /usr/share/puppet-dashboard/spool every hour. 
+# The accepted modifiers are as follows:
+# 's' = seconds
+# 'm' = minutes
+# 'h' = hours
+# 'd' = days
+#
+# /usr/share/puppet-dashboard/spool {
+#   rules    = count > 15
+#   recurse  = false
+#   action   = echo "$(date) spool directory is not being processed" | mailx jdfulmer@armstrongceilings.com
+#   interval = 1h
 # }
 
-#
-# This configuration runs an action if any of the 
-# patterns contained in /etc/fido/rules/apache.conf 
-# is suddenly matched.
-#
-# /var/log/httpd/access_log {
-#  rules  = apache.conf
-#  action = /usr/local/bin/sendpage.sh
-# }
+
 
 
