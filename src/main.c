@@ -281,7 +281,10 @@ main(int argc, char *argv[])
       if ((crew = new_crew(count, count, FALSE)) == NULL) {
         NOTIFY(FATAL, "%s: [error] unable to allocate memory for %d log files", program_name, count);
       }
-      set_pid(P, getpid());
+      if (set_pid(P, getpid()) == FALSE) {
+        NOTIFY(FATAL, "%s: [error] unable to write pid file: %s", program_name, conf_get_pidfile(C));
+        exit(1);
+      }
       pid_destroy(P);
       for (i = 0; i < count && crew_get_shutdown(crew) != TRUE; i++) {
         FIDO F = new_fido(C, keys[i]);
