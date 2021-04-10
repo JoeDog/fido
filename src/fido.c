@@ -108,6 +108,9 @@ new_fido(CONF C, const char *file)
   this->exclude  = xstrdup(conf_get_exclude(this->C, this->wfile));
   this->recurse  = conf_get_recurse(this->C, this->wfile);
   this->interval = __parse_time(INTERVAL, conf_get_interval(this->C, this->wfile));
+  if (this->interval < 1) {
+    this->interval = 5;
+  }
   this->throttle = new_throttle(
     this->wfile, __parse_time(EXCEEDS, conf_get_throttle(this->C, this->wfile))
   );
@@ -762,8 +765,6 @@ __seconds_since_90(char *file)
   return nsecs;
 }
 
-
-
 private char *
 __build_command(FIDO this, RULE rule) 
 {
@@ -933,6 +934,10 @@ __parse_time(int m, char *p)
   tmp  = substring(p, 0, x);
   time = atoi(tmp);
   free(tmp);
+
+  if (m == INTERVAL) {
+    return time;
+  }
 
   for (; x < strlen(p); x ++) {
     switch(tolower(p[x])){
