@@ -42,6 +42,12 @@ pid_destroy(PID this)
   return this;
 }
 
+char *
+pid_file(PID this)
+{
+  return this->file;
+}
+
 BOOLEAN 
 set_pid(PID this, int pid)
 {
