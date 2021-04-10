@@ -3,6 +3,15 @@
 # Date:       Wed Dec 21 10:38:16 EST 2011
 # Version:    1.00
 
+2021/04/10 Jeffrey Fulmer <http://www.joedog.org/support/>
+ * FIDO RELEASE            RELEASE_1-1-7_APR-10-2021
+ * go.sh                   Added arg 'rpm' to switch on
+ * src/fido.c              Ensure interval is a positive int
+ * src/pid.c               Added char * pid_file(PID this); 
+ * src/pid.h               Added char * pid_file(PID this); 
+ * src/main.c              Handled unable to write pid error (fatal)
+ * src/version.c           Version increment: 1.1.7
+
 2020/06/09 Jeffrey Fulmer <http://www.joedog.org/support/>
  * FIDO RELEASE            RELEASE_1-1-6_JUN-10-2020
  * go.sh                   Added hints for rpm builds
