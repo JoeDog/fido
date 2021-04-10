@@ -1,14 +1,19 @@
 #!/bin/sh
 # 
-#./configure --prefix=/usr \
-#            --sysconfdir=/etc \
-#            --mandir=/usr/share/man
+CMD=$1
 
-
-echo "RPM build...."
-./configure --prefix=$HOME/src/fido-rpm/usr         \
-            --sysconfdir=$HOME/src/fido-rpm/etc      \
-            --mandir=$HOME/src/fido-rpm/usr/share/man
+echo $CMD | grep -q -i "rpm" 
+if [ $? -eq 0 ] 
+then
+  echo "RPM build...."
+  ./configure --prefix=$HOME/src/fido-rpm/usr         \
+              --sysconfdir=$HOME/src/fido-rpm/etc      \
+              --mandir=$HOME/src/fido-rpm/usr/share/man
+else 
+  ./configure --prefix=/usr \
+              --sysconfdir=/etc \
+              --mandir=/usr/share/man
+fi
    
 echo "make"
 echo "sudo make install"
