@@ -909,6 +909,15 @@ __parse_count(char *p, int *op)
   return count;
 }
 
+private BOOLEAN
+__digits_only(const char *s)
+{
+  while (*s) {
+    if (isdigit(*s++) == 0) return FALSE;
+  }
+  return TRUE;
+}
+
 private int
 __parse_time(int m, char *p)
 {
@@ -921,6 +930,16 @@ __parse_time(int m, char *p)
   if (p == NULL || strlen(p) < 1) return -1;
 
   p = trim(p);
+
+  if (__digits_only(p) == TRUE) {
+    /** 
+     * We didn't read the docs;
+     * assume seconds
+     */ 
+    int i = atoi(p);
+    return i; 
+  }
+
   if (m == EXCEEDS) {
     __demodify(p, mod);
   }
@@ -934,10 +953,6 @@ __parse_time(int m, char *p)
   tmp  = substring(p, 0, x);
   time = atoi(tmp);
   free(tmp);
-
-  if (m == INTERVAL) {
-    return time;
-  }
 
   for (; x < strlen(p); x ++) {
     switch(tolower(p[x])){
