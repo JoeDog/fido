@@ -2,6 +2,7 @@
 
 PREFIX=$1
 SYSTEMD=false
+RELEASE=$(uname -r | sed 's/^.*el\([0-9]\+\).*$/\1/')
 
 if [ ! -e "$1" ] ; then
   echo "Usage: rpm.sh /path/to/rmpbuild/dir"
@@ -39,7 +40,7 @@ if [ $SYSTEMD == true ]; then
   fi
   cp "${BASE}/fido.service" "${PREFIX}/usr/lib/systemd/system"
   chmod 644 "${PREFIX}/usr/lib/systemd/system/fido.service"
-  cp "${BASE}/rpm-7.spec" "${PREFIX}/fido.spec"
+  cp "${BASE}/rpm-${RELEASE}.spec" "${PREFIX}/fido.spec"
   cp "${BASE}/rpm.make"   "${PREFIX}/Makefile"
 else
   ## INSTALL /etc/init.d/fido
@@ -61,7 +62,7 @@ else
   cp  "${BASE}/fido-redhat-config" "${PREFIX}/etc/sysconfig/fido"
   chown root:root "${PREFIX}/etc/sysconfig/fido"
   chmod 644 "${PREFIX}/etc/sysconfig/fido"
-  cp "${BASE}/rpm-6.spec" "${PREFIX}/fido.spec"
+  cp "${BASE}/rpm-${RELEASE}.spec" "${PREFIX}/fido.spec"
   cp "${BASE}/rpm.make"   "${PREFIX}/Makefile"
 fi
 
